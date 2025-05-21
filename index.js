@@ -7,7 +7,14 @@ async function run() {
     
     const canvas = document.getElementById("gpu-canvas");
     const viz = new Visualizer("gpu-canvas");
-    console.log("Visualizer methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(viz)));     
+    
+    // More detailed logging of the Visualizer object
+    console.log("Visualizer object:", viz);
+    console.log("Visualizer prototype:", Object.getPrototypeOf(viz));
+    console.log("Visualizer methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(viz)));
+    console.log("Visualizer own properties:", Object.getOwnPropertyNames(viz));
+    console.log("update method type:", typeof viz.update);
+    console.log("render method type:", typeof viz.render);
     const fileInput = document.getElementById("file-input");
     
     // Add a message to the page
@@ -70,8 +77,22 @@ async function run() {
           // Show some values on screen for debugging
           debugElement.textContent = `Audio data: min=${Math.min(...data)}, max=${Math.max(...data)}, avg=${avg.toFixed(2)}`;
           
-          viz.update(data);
-          viz.render();
+          // Try to call methods with more error handling
+          try {
+            if (typeof viz.update === 'function') {
+              viz.update(data);
+            } else {
+              console.error("viz.update is not a function, it's a:", typeof viz.update);
+            }
+            
+            if (typeof viz.render === 'function') {
+              viz.render();
+            } else {
+              console.error("viz.render is not a function, it's a:", typeof viz.render);
+            }
+          } catch (e) {
+            console.error("Error calling viz methods:", e);
+          }
           animationId = requestAnimationFrame(frame);
         }
         animationId = requestAnimationFrame(frame);
