@@ -107,10 +107,11 @@ impl Visualizer {
             mapped_at_creation: false,
         });
 
-        // Create buffer for audio data (1024 f32 values)
+        // Create buffer for audio data (256 vec4<f32> values = 1024 f32 values)
+        // Each vec4 is 16 bytes (4 floats * 4 bytes)
         let data_buf = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Audio Data Buffer"),
-            size: (1024 * std::mem::size_of::<f32>()) as u64,
+            size: (256 * 16) as u64, // 256 vec4s * 16 bytes per vec4
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -135,8 +136,9 @@ impl Visualizer {
     }
 
     pub fn update(&self, data: &[u8]) {
-        // Convert u8 audio data to f32 and normalize to [-1.0, 1.0]
-        let mut float_data = vec![0.0f32; 1024]; // Ensure exactly 1024 samples
+        // Convert u8 audio data to vec4<f32> and normalize to [-1.0, 1.0]
+        // We need 256 vec4s to store 1024 samples
+        let mut float_data = vec![0.0f32; 1024]; // Temporary buffer
         
         // Only use the first 1024 samples or pad with zeros if fewer
         let samples_to_use = std::cmp::min(data.len(), 1024);
@@ -145,11 +147,32 @@ impl Visualizer {
             float_data[i] = ((data[i] as f32 / 128.0) - 1.0) * 1.2;
         }
         
-        // Log the first few samples and their values for debugging
+        // Log the first few samples for debugging
         web_sys::console::log_1(&format!("Audio samples: {:?}", &float_data[0..5]).into());
         
-        // copy audio data into uniform buffer
-        self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&float_data));
+        // Create aligned vec4 data (256 vec4s = 1024 floats)
+        #[repr(C)]
+        #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+        struct Vec4 {
+            x: f32,
+            y: f32,
+            z: f32,
+            w: f32,
+        }
+        
+        let mut aligned_data = vec![Vec4 { x: 0.0, y: 0.0, z: 0.0, w: 0.0 }; 256];
+        for i in 0..256 {
+            let base = i * 4;
+            aligned_data[i] = Vec4 {
+                x: float_data[base],
+                y: float_data[base + 1],
+                z: float_data[base + 2],
+                w: float_data[base + 3],
+            };
+        }
+        
+        // Copy aligned data to the buffer
+        self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&aligned_data));
     }
 
     pub fn render(&self) {
