@@ -1,0 +1,101 @@
+use wasm_bindgen::prelude::*;
+use wgpu::util::DeviceExt;
+use web_sys::HtmlCanvasElement;
+
+#[wasm_bindgen]
+pub struct Visualizer {
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    pipeline: wgpu::RenderPipeline,
+    vertex_buf: wgpu::Buffer,
+    data_buf: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
+}
+
+#[wasm_bindgen]
+impl Visualizer {
+    #[wasm_bindgen(constructor)]
+    pub async fn new(canvas_id: &str) -> Visualizer {
+        console_error_panic_hook::set_once();
+        let window = web_sys::window().unwrap();
+        let doc = window.document().unwrap();
+        let canvas: HtmlCanvasElement = doc.get_element_by_id(canvas_id).unwrap().dyn_into().unwrap();
+
+        let instance = wgpu::Instance::new(wgpu::Backends::all());
+        let surface = instance.create_surface(&canvas);
+        let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: Some(&surface),
+            force_fallback_adapter: false,
+        }).await.unwrap();
+
+        let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor::default(), None).await.unwrap();
+
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+        });
+
+        let render_format = surface.get_preferred_format(&adapter).unwrap();
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: None,
+            vertex: wgpu::VertexState { module: &shader, entry_point: "vs_main", buffers: &[] },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: render_format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        });
+
+        // empty vertex and data buffers
+        let vertex_buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: 4, // dummy
+            usage: wgpu::BufferUsages::VERTEX,
+            mapped_at_creation: false,
+        });
+
+        let data_buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (2048 * 4) as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                count: None,
+            }],
+            label: None,
+        });
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry { binding: 0, resource: data_buf.as_entire_binding() }],
+            label: None,
+        });
+
+        Visualizer { device, queue, pipeline, vertex_buf, data_buf, bind_group }
+    }
+
+    pub fn update(&self, data: &[u8]) {
+        // copy audio data into uniform buffer
+        self.queue.write_buffer(&self.data_buf, 0, data);
+    }
+
+    pub fn render(&self) {
+        // omitted: encode commands to draw waveform using data_buf uniform
+    }
+}
