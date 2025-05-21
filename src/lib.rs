@@ -143,19 +143,21 @@ impl Visualizer {
         // Only use the first 1024 samples or pad with zeros if fewer
         let samples_to_use = std::cmp::min(data.len(), 1024);
         for i in 0..samples_to_use {
-            // Normalize and amplify slightly for better visibility
-            float_data[i] = ((data[i] as f32 / 128.0) - 1.0) * 1.2;
+            // Normalize and amplify for better visibility
+            float_data[i] = ((data[i] as f32 / 128.0) - 1.0) * 2.0;
         }
         
         // Log the first few samples for debugging
         web_sys::console::log_1(&format!("Audio samples: {:?}", &float_data[0..5]).into());
         
-        // Create aligned data as a flat array of floats
-        // We'll manually ensure it's aligned properly for vec4 in the shader
+        // Create aligned data as vec4 array for proper shader alignment
         let mut aligned_data = [0.0f32; 1024];
         for i in 0..samples_to_use {
             aligned_data[i] = float_data[i];
         }
+        
+        // Log some values to verify data
+        web_sys::console::log_1(&format!("First few aligned samples: {:?}", &aligned_data[0..5]).into());
         
         // Copy aligned data to the buffer
         self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&aligned_data));

@@ -48,8 +48,16 @@ async function run() {
         message.textContent = `Playing: ${file.name}`;
         audioSource.start();
 
-        // Create a smaller buffer for better performance
+        // Create a buffer for the audio data
         const data = new Uint8Array(1024);
+        
+        // Add a debug element to show audio values
+        const debugElement = document.createElement("div");
+        debugElement.style.fontSize = "10px";
+        debugElement.style.fontFamily = "monospace";
+        debugElement.style.marginTop = "10px";
+        document.body.appendChild(debugElement);
+        
         function frame() {
           analyser.getByteTimeDomainData(data);
           
@@ -57,6 +65,9 @@ async function run() {
           const sum = data.reduce((a, b) => a + b, 0);
           const avg = sum / data.length;
           console.log("Audio data avg:", avg, "samples:", data[0], data[1], data[2]);
+          
+          // Show some values on screen for debugging
+          debugElement.textContent = `Audio data: min=${Math.min(...data)}, max=${Math.max(...data)}, avg=${avg.toFixed(2)}`;
           
           viz.update(data);
           viz.render();
