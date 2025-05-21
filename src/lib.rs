@@ -113,10 +113,6 @@ impl Visualizer {
         self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&float_data));
     }
 
-    // Store surface and surface_config as part of the Visualizer struct
-    surface: wgpu::Surface,
-    surface_config: wgpu::SurfaceConfiguration,
-    
     pub fn render(&self) {
         let frame = self.surface.get_current_texture().unwrap();
         let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
