@@ -48,12 +48,15 @@ async function run() {
         message.textContent = `Playing: ${file.name}`;
         audioSource.start();
 
-        const data = new Uint8Array(analyser.frequencyBinCount);
+        // Create a smaller buffer for better performance
+        const data = new Uint8Array(1024);
         function frame() {
           analyser.getByteTimeDomainData(data);
           
-          // Log some debug info
-          console.log("Audio data sample:", data[0], data[1], data[2]);
+          // Check if we're getting real audio data
+          const sum = data.reduce((a, b) => a + b, 0);
+          const avg = sum / data.length;
+          console.log("Audio data avg:", avg, "samples:", data[0], data[1], data[2]);
           
           viz.update(data);
           viz.render();

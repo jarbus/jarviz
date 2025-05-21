@@ -27,7 +27,7 @@ impl Visualizer {
         let canvas_height = canvas.height();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::all(),
+            backends: wgpu::Backends::GL, // Use WebGL explicitly
             dx12_shader_compiler: Default::default(),
         });
         
@@ -74,7 +74,15 @@ impl Visualizer {
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
-            primitive: wgpu::PrimitiveState::default(),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::LineStrip, // Use line strip to connect points
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
@@ -117,12 +125,16 @@ impl Visualizer {
 
     pub fn update(&self, data: &[u8]) {
         // Convert u8 audio data to f32 and normalize to [-1.0, 1.0]
-        let mut float_data = vec![0.0f32; data.len()];
-        for (i, &sample) in data.iter().enumerate() {
-            float_data[i] = (sample as f32 / 128.0) - 1.0;
+        let mut float_data = vec![0.0f32; 1024]; // Ensure exactly 1024 samples
+        
+        // Only use the first 1024 samples or pad with zeros if fewer
+        let samples_to_use = std::cmp::min(data.len(), 1024);
+        for i in 0..samples_to_use {
+            // Normalize and amplify slightly for better visibility
+            float_data[i] = ((data[i] as f32 / 128.0) - 1.0) * 1.2;
         }
         
-        // Log the first few samples for debugging
+        // Log the first few samples and their values for debugging
         web_sys::console::log_1(&format!("Audio samples: {:?}", &float_data[0..5]).into());
         
         // copy audio data into uniform buffer
