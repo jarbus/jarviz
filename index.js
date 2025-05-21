@@ -7,6 +7,7 @@ async function run() {
     
     const canvas = document.getElementById("gpu-canvas");
     const viz = new Visualizer("gpu-canvas");
+    console.log("Visualizer methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(viz)));     
     const fileInput = document.getElementById("file-input");
     
     // Add a message to the page
