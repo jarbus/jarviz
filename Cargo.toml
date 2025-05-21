@@ -13,7 +13,7 @@ wgpu = { version = "0.16", features = ["webgl"] }
 js-sys = "0.3"
 web-sys = { version = "0.3", features = ["HtmlCanvasElement", "Window", "Document", "console"] }
 console_error_panic_hook = "0.1"
-bytemuck = "1.9"
+bytemuck = { version = "1.9", features = ["derive"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

@@ -150,25 +150,11 @@ impl Visualizer {
         // Log the first few samples for debugging
         web_sys::console::log_1(&format!("Audio samples: {:?}", &float_data[0..5]).into());
         
-        // Create aligned vec4 data (256 vec4s = 1024 floats)
-        #[repr(C)]
-        #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-        struct Vec4 {
-            x: f32,
-            y: f32,
-            z: f32,
-            w: f32,
-        }
-        
-        let mut aligned_data = vec![Vec4 { x: 0.0, y: 0.0, z: 0.0, w: 0.0 }; 256];
-        for i in 0..256 {
-            let base = i * 4;
-            aligned_data[i] = Vec4 {
-                x: float_data[base],
-                y: float_data[base + 1],
-                z: float_data[base + 2],
-                w: float_data[base + 3],
-            };
+        // Create aligned data as a flat array of floats
+        // We'll manually ensure it's aligned properly for vec4 in the shader
+        let mut aligned_data = [0.0f32; 1024];
+        for i in 0..samples_to_use {
+            aligned_data[i] = float_data[i];
         }
         
         // Copy aligned data to the buffer
