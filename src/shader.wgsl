@@ -7,11 +7,11 @@ struct AudioData {
 @vertex
 fn vs_main(@builtin(vertex_index) idx: u32) -> @builtin(position) vec4<f32> {
     let x = f32(idx) / 1023.0 * 2.0 - 1.0;
-    let y = audio.samples[idx] * 0.8;  // Increased amplitude for better visibility
+    let y = audio.samples[idx % 1024] * 0.8;  // Ensure we don't go out of bounds
     return vec4<f32>(x, y, 0.0, 1.0);
 }
 
 @fragment
 fn fs_main() -> @location(0) vec4<f32> {
-    return vec4<f32>(0.2, 0.8, 1.0, 1.0);
+    return vec4<f32>(0.0, 0.8, 1.0, 1.0);  // Bright cyan color for visibility
 }

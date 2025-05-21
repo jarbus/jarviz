@@ -51,6 +51,10 @@ async function run() {
         const data = new Uint8Array(analyser.frequencyBinCount);
         function frame() {
           analyser.getByteTimeDomainData(data);
+          
+          // Log some debug info
+          console.log("Audio data sample:", data[0], data[1], data[2]);
+          
           viz.update(data);
           viz.render();
           animationId = requestAnimationFrame(frame);

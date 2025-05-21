@@ -88,9 +88,10 @@ impl Visualizer {
             mapped_at_creation: false,
         });
 
+        // Create buffer for audio data (1024 f32 values)
         let data_buf = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: (2048 * 4) as u64,
+            label: Some("Audio Data Buffer"),
+            size: (1024 * std::mem::size_of::<f32>()) as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -121,23 +122,41 @@ impl Visualizer {
             float_data[i] = (sample as f32 / 128.0) - 1.0;
         }
         
+        // Log the first few samples for debugging
+        web_sys::console::log_1(&format!("Audio samples: {:?}", &float_data[0..5]).into());
+        
         // copy audio data into uniform buffer
         self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&float_data));
     }
 
     pub fn render(&self) {
-        let frame = self.surface.get_current_texture().unwrap();
+        let frame = match self.surface.get_current_texture() {
+            Ok(frame) => frame,
+            Err(e) => {
+                web_sys::console::error_1(&format!("Failed to get current texture: {:?}", e).into());
+                return;
+            }
+        };
+        
         let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
         
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { 
+            label: Some("Render Encoder") 
+        });
+        
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
+                label: Some("Main Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        }),
                         store: true,
                     },
                 })],
@@ -146,7 +165,11 @@ impl Visualizer {
             
             rpass.set_pipeline(&self.pipeline);
             rpass.set_bind_group(0, &self.bind_group, &[]);
-            rpass.draw(0..1024, 0..1); // Draw 1024 points for the waveform
+            
+            // Draw line segments for the waveform
+            rpass.draw(0..1024, 0..1);
+            
+            web_sys::console::log_1(&"Drawing waveform".into());
         }
         
         self.queue.submit(std::iter::once(encoder.finish()));
