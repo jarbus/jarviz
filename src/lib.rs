@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use wgpu::util::DeviceExt;
 use web_sys::HtmlCanvasElement;
 
 #[wasm_bindgen]
@@ -23,8 +22,14 @@ impl Visualizer {
         let doc = window.document().unwrap();
         let canvas: HtmlCanvasElement = doc.get_element_by_id(canvas_id).unwrap().dyn_into().unwrap();
 
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
-        let surface = instance.create_surface(&canvas);
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            dx12_shader_compiler: Default::default(),
+        });
+        
+        // For WebGL, we need to use the canvas differently
+        let surface = instance.create_surface_from_canvas(&canvas).expect("Failed to create surface");
+        
         let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: Some(&surface),
@@ -33,14 +38,17 @@ impl Visualizer {
 
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor::default(), None).await.unwrap();
         
-        let render_format = surface.get_preferred_format(&adapter).unwrap();
+        let surface_caps = surface.get_capabilities(&adapter);
+        let surface_format = surface_caps.formats[0]; // Choose the first available format
+        
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: render_format,
+            format: surface_format,
             width: canvas.width(),
             height: canvas.height(),
             present_mode: wgpu::PresentMode::Fifo,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            view_formats: vec![],
         };
         surface.configure(&device, &surface_config);
 

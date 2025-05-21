@@ -1,4 +1,4 @@
-import init, { Visualizer } from "./pkg/audio_visualizer.js";
+import init, { Visualizer } from "./pkg/jarviz.js";
 
 async function run() {
   await init();
