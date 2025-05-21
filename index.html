@@ -3,8 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <title>WGPU Audio Visualizer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #1a1a1a;
+      color: white;
+      padding: 20px;
+    }
+    canvas {
+      margin-top: 20px;
+      border: 1px solid #444;
+      background-color: black;
+    }
+    input[type="file"] {
+      margin: 20px 0;
+      padding: 10px;
+      background-color: #333;
+      color: white;
+      border-radius: 4px;
+      border: none;
+    }
+    h1 {
+      color: #4fc3f7;
+    }
+  </style>
 </head>
 <body>
+  <h1>WGPU Audio Visualizer</h1>
+  <p>Select an audio file to visualize:</p>
   <input type="file" id="file-input" accept="audio/*" />
   <canvas id="gpu-canvas" width="800" height="400"></canvas>
   <script type="module" src="./index.js"></script>

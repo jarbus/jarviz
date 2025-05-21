@@ -7,7 +7,7 @@ struct AudioData {
 @vertex
 fn vs_main(@builtin(vertex_index) idx: u32) -> @builtin(position) vec4<f32> {
     let x = f32(idx) / 1023.0 * 2.0 - 1.0;
-    let y = audio.samples[idx] * 0.5;  // Scale to fit in viewport
+    let y = audio.samples[idx] * 0.8;  // Increased amplitude for better visibility
     return vec4<f32>(x, y, 0.0, 1.0);
 }
 
