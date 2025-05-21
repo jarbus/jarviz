@@ -21,6 +21,10 @@ impl Visualizer {
         let window = web_sys::window().unwrap();
         let doc = window.document().unwrap();
         let canvas: HtmlCanvasElement = doc.get_element_by_id(canvas_id).unwrap().dyn_into().unwrap();
+        
+        // Store canvas dimensions before creating the surface
+        let canvas_width = canvas.width();
+        let canvas_height = canvas.height();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -44,8 +48,8 @@ impl Visualizer {
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: canvas.width(),
-            height: canvas.height(),
+            width: canvas_width,
+            height: canvas_height,
             present_mode: wgpu::PresentMode::Fifo,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
