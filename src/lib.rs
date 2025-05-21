@@ -31,8 +31,8 @@ impl Visualizer {
             dx12_shader_compiler: Default::default(),
         });
         
-        // For WebGL, we need to use the canvas differently
-        let surface = instance.create_surface(&canvas).expect("Failed to create surface");
+        // For WebGL, we need to use the canvas with SurfaceTarget
+        let surface = instance.create_surface_from_canvas(&canvas).expect("Failed to create surface");
         
         let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
