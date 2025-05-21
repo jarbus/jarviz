@@ -96,6 +96,47 @@ impl Visualizer {
     }
 
     pub fn render(&self) {
-        // omitted: encode commands to draw waveform using data_buf uniform
+        let window = web_sys::window().unwrap();
+        let doc = window.document().unwrap();
+        let canvas: HtmlCanvasElement = doc.get_element_by_id("gpu-canvas").unwrap().dyn_into().unwrap();
+        
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            width: canvas.width(),
+            height: canvas.height(),
+            present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        };
+        
+        let instance = wgpu::Instance::new(wgpu::Backends::all());
+        let surface = instance.create_surface(&canvas);
+        surface.configure(&self.device, &surface_config);
+        
+        let frame = surface.get_current_texture().unwrap();
+        let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        {
+            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: None,
+            });
+            
+            rpass.set_pipeline(&self.pipeline);
+            rpass.set_bind_group(0, &self.bind_group, &[]);
+            rpass.draw(0..1024, 0..1); // Draw 1024 points for the waveform
+        }
+        
+        self.queue.submit(std::iter::once(encoder.finish()));
+        frame.present();
     }
 }
