@@ -16,9 +16,10 @@ pub struct Visualizer {
 #[wasm_bindgen]
 impl Visualizer {
     #[wasm_bindgen(constructor)]
-    pub fn new(canvas_id: &str) -> wasm_bindgen::JsValue {
+    pub fn new(canvas_id: String) -> wasm_bindgen::JsValue {
+        let canvas_id_owned = canvas_id.clone();
         wasm_bindgen_futures::future_to_promise(async move {
-            let visualizer = Self::create(canvas_id).await;
+            let visualizer = Self::create(&canvas_id_owned).await;
             Ok(visualizer.into())
         }).into()
     }
