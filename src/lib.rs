@@ -28,7 +28,7 @@ impl Visualizer {
         });
         
         // For WebGL, we need to use the canvas differently
-        let surface = instance.create_surface_from_canvas(canvas).expect("Failed to create surface");
+        let surface = instance.create_surface(&canvas).expect("Failed to create surface");
         
         let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
