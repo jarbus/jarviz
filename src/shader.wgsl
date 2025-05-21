@@ -6,9 +6,13 @@ struct AudioData {
 
 @vertex
 fn vs_main(@builtin(vertex_index) idx: u32) -> @builtin(position) vec4<f32> {
-    let x = f32(idx) / 1023.0 * 2.0 - 1.0;
+    // Make sure we don't go out of bounds with a safer index calculation
+    let index = min(idx, 1023u);
+    let x = f32(index) / 1023.0 * 2.0 - 1.0;
+    
     // Amplify the signal to make it more visible
-    let y = audio.samples[idx % 1024] * 2.0;
+    let y = audio.samples[index] * 3.0;
+    
     return vec4<f32>(x, y, 0.0, 1.0);
 }
 

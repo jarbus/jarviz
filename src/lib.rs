@@ -34,13 +34,24 @@ impl Visualizer {
         // For WebGL, we need to use the canvas with SurfaceTarget
         let surface = instance.create_surface_from_canvas(canvas).expect("Failed to create surface");
         
+        // Request adapter with fallback options
         let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
+            power_preference: wgpu::PowerPreference::default(),
             compatible_surface: Some(&surface),
             force_fallback_adapter: false,
-        }).await.unwrap();
+        }).await.expect("Failed to find an appropriate adapter");
 
-        let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor::default(), None).await.unwrap();
+        // Log adapter info for debugging
+        web_sys::console::log_1(&format!("Using adapter: {:?}", adapter.get_info().name).into());
+
+        let (device, queue) = adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::empty(),
+                limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            },
+            None
+        ).await.expect("Failed to request device");
         
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats[0]; // Choose the first available format
