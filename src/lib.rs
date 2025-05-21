@@ -16,7 +16,14 @@ pub struct Visualizer {
 #[wasm_bindgen]
 impl Visualizer {
     #[wasm_bindgen(constructor)]
-    pub async fn new(canvas_id: &str) -> Visualizer {
+    pub fn new(canvas_id: &str) -> wasm_bindgen::JsValue {
+        wasm_bindgen_futures::future_to_promise(async move {
+            let visualizer = Self::create(canvas_id).await;
+            Ok(visualizer.into())
+        }).into()
+    }
+    
+    async fn create(canvas_id: &str) -> Visualizer {
         console_error_panic_hook::set_once();
         let window = web_sys::window().unwrap();
         let doc = window.document().unwrap();

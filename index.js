@@ -6,7 +6,15 @@ async function run() {
     console.log("WASM initialized successfully");
     
     const canvas = document.getElementById("gpu-canvas");
-    const viz = new Visualizer("gpu-canvas");
+    
+    // Since Visualizer constructor is async, we need to await it
+    console.log("Creating Visualizer...");
+    const vizPromise = new Visualizer("gpu-canvas");
+    console.log("Visualizer promise:", vizPromise);
+    
+    // Properly await the Promise to get the actual Visualizer instance
+    const viz = await vizPromise;
+    console.log("Visualizer resolved:", viz);
     
     // More detailed logging of the Visualizer object
     console.log("Visualizer object:", viz);
@@ -83,15 +91,18 @@ async function run() {
               viz.update(data);
             } else {
               console.error("viz.update is not a function, it's a:", typeof viz.update);
+              console.log("Full viz object:", viz);
             }
             
             if (typeof viz.render === 'function') {
               viz.render();
             } else {
               console.error("viz.render is not a function, it's a:", typeof viz.render);
+              console.log("Full viz object:", viz);
             }
           } catch (e) {
             console.error("Error calling viz methods:", e);
+            console.error("Error details:", e.stack);
           }
           animationId = requestAnimationFrame(frame);
         }
