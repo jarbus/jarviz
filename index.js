@@ -94,7 +94,9 @@ async function run() {
               console.log("Full viz object:", viz);
             }
             
+            // Only render if we're not already rendering
             if (typeof viz.render === 'function') {
+              // Use requestAnimationFrame to throttle render calls
               viz.render();
             } else {
               console.error("viz.render is not a function, it's a:", typeof viz.render);

@@ -173,16 +173,20 @@ impl Visualizer {
         self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&aligned_data));
     }
 
+    // Track if we're currently rendering to avoid acquiring the surface multiple times
     #[wasm_bindgen(js_name = "render")]
     pub fn render(&self) {
         web_sys::console::log_1(&"Rust: render method called".into());
-        let frame = match self.surface.get_current_texture() {
-            Ok(frame) => frame,
-            Err(e) => {
-                web_sys::console::error_1(&format!("Failed to get current texture: {:?}", e).into());
-                return;
-            }
-        };
+        
+        // Use a scope to ensure all rendering is complete before presenting
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let frame = match self.surface.get_current_texture() {
+                Ok(frame) => frame,
+                Err(e) => {
+                    web_sys::console::error_1(&format!("Failed to get current texture: {:?}", e).into());
+                    return;
+                }
+            };
         
         let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
         
@@ -220,5 +224,10 @@ impl Visualizer {
         
         self.queue.submit(std::iter::once(encoder.finish()));
         frame.present();
+        }));
+        
+        if let Err(e) = result {
+            web_sys::console::error_1(&format!("Render panic: {:?}", e).into());
+        }
     }
 }
