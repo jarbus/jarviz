@@ -10,6 +10,8 @@ pub struct Visualizer {
     vertex_buf: wgpu::Buffer,
     data_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
+    surface: wgpu::Surface,
+    surface_config: wgpu::SurfaceConfiguration,
 }
 
 #[wasm_bindgen]
@@ -30,13 +32,23 @@ impl Visualizer {
         }).await.unwrap();
 
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor::default(), None).await.unwrap();
+        
+        let render_format = surface.get_preferred_format(&adapter).unwrap();
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: render_format,
+            width: canvas.width(),
+            height: canvas.height(),
+            present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        };
+        surface.configure(&device, &surface_config);
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
 
-        let render_format = surface.get_preferred_format(&adapter).unwrap();
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: None,
@@ -45,7 +57,7 @@ impl Visualizer {
                 module: &shader,
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: render_format,
+                    format: surface_config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -87,33 +99,26 @@ impl Visualizer {
             label: None,
         });
 
-        Visualizer { device, queue, pipeline, vertex_buf, data_buf, bind_group }
+        Visualizer { device, queue, pipeline, vertex_buf, data_buf, bind_group, surface, surface_config }
     }
 
     pub fn update(&self, data: &[u8]) {
+        // Convert u8 audio data to f32 and normalize to [-1.0, 1.0]
+        let mut float_data = vec![0.0f32; data.len()];
+        for (i, &sample) in data.iter().enumerate() {
+            float_data[i] = (sample as f32 / 128.0) - 1.0;
+        }
+        
         // copy audio data into uniform buffer
-        self.queue.write_buffer(&self.data_buf, 0, data);
+        self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&float_data));
     }
 
+    // Store surface and surface_config as part of the Visualizer struct
+    surface: wgpu::Surface,
+    surface_config: wgpu::SurfaceConfiguration,
+    
     pub fn render(&self) {
-        let window = web_sys::window().unwrap();
-        let doc = window.document().unwrap();
-        let canvas: HtmlCanvasElement = doc.get_element_by_id("gpu-canvas").unwrap().dyn_into().unwrap();
-        
-        let surface_config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
-            width: canvas.width(),
-            height: canvas.height(),
-            present_mode: wgpu::PresentMode::Fifo,
-            alpha_mode: wgpu::CompositeAlphaMode::Auto,
-        };
-        
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
-        let surface = instance.create_surface(&canvas);
-        surface.configure(&self.device, &surface_config);
-        
-        let frame = surface.get_current_texture().unwrap();
+        let frame = self.surface.get_current_texture().unwrap();
         let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
         
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
