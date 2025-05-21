@@ -135,7 +135,7 @@ impl Visualizer {
         Visualizer { device, queue, pipeline, vertex_buf, data_buf, bind_group, surface, surface_config }
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = update)]
     pub fn update(&self, data: &[u8]) {
         // Convert u8 audio data to vec4<f32> and normalize to [-1.0, 1.0]
         // We need 256 vec4s to store 1024 samples
@@ -164,7 +164,7 @@ impl Visualizer {
         self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&aligned_data));
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = render)]
     pub fn render(&self) {
         let frame = match self.surface.get_current_texture() {
             Ok(frame) => frame,
