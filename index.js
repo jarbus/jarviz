@@ -1,5 +1,11 @@
 import init, { Visualizer } from "./pkg/jarviz.js";
 
+// Global variables for audio context and related objects
+let audioCtx = null;
+let audioSource = null;
+let analyser = null;
+let animationId = null;
+
 async function run() {
   try {
     await init();
@@ -22,11 +28,6 @@ async function run() {
     message.id = "status-message";
     message.textContent = "Ready to visualize audio";
     document.body.insertBefore(message, canvas.nextSibling);
-
-    let animationId = null;
-    let audioSource = null;
-    let audioCtx = null;
-    let analyser = null;
 
     // Set up pause button
     pauseBtn.addEventListener("click", () => {
@@ -143,7 +144,16 @@ function togglePause(viz, pauseBtn, message) {
   pauseBtn.textContent = isPaused ? "Resume (Space)" : "Pause (Space)";
   pauseBtn.classList.toggle("paused", isPaused);
   
-  message.textContent = isPaused ? "Visualization paused" : "Visualization running";
+  // Pause/resume audio playback if context exists
+  if (audioCtx) {
+    if (isPaused) {
+      audioCtx.suspend();
+    } else {
+      audioCtx.resume();
+    }
+  }
+  
+  message.textContent = isPaused ? "Audio and visualization paused" : "Audio and visualization running";
 }
 
 run();
