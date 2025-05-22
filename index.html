@@ -64,6 +64,8 @@
   <div class="controls">
     <input type="file" id="file-input" accept="audio/*" />
     <button id="pause-btn">Pause (Space)</button>
+    <input type="range" id="resolution-slider" min="32" max="512" step="32" value="256" />
+    <span id="resolution-value">256 points</span>
   </div>
   <canvas id="gpu-canvas" width="800" height="400" style="background-color: black;"></canvas>
   <div class="keyboard-hint">Press Space to pause/resume the visualization</div>

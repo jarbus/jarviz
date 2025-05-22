@@ -9,10 +9,12 @@ pub struct Visualizer {
     pipeline: wgpu::RenderPipeline,
     vertex_buf: wgpu::Buffer,
     data_buf: wgpu::Buffer,
+    resolution_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     surface: wgpu::Surface,
     surface_config: wgpu::SurfaceConfiguration,
     paused: bool,
+    resolution: u32,
 }
 
 #[wasm_bindgen]
@@ -84,12 +86,20 @@ impl Visualizer {
 
         // Create bind group layout first
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-                count: None,
-            }],
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                    count: None,
+                },
+            ],
             label: None,
         });
         
@@ -143,10 +153,25 @@ impl Visualizer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        
+        // Create buffer for resolution
+        let resolution_buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Resolution Buffer"),
+            size: 16, // One vec4<u32> (16 bytes)
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        
+        // Initialize resolution buffer with default value (256)
+        let resolution_data = [256u32, 0, 0, 0]; // Only first value is used
+        queue.write_buffer(&resolution_buf, 0, bytemuck::cast_slice(&resolution_data));
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: data_buf.as_entire_binding() }],
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: data_buf.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: resolution_buf.as_entire_binding() },
+            ],
             label: None,
         });
 
@@ -155,11 +180,13 @@ impl Visualizer {
             queue, 
             pipeline, 
             vertex_buf, 
-            data_buf, 
+            data_buf,
+            resolution_buf,
             bind_group, 
             surface, 
             surface_config,
             paused: false,
+            resolution: 256,
         }
     }
 
@@ -284,6 +311,19 @@ impl Visualizer {
         self.paused
     }
     
+    #[wasm_bindgen(js_name = "setResolution")]
+    pub fn set_resolution(&mut self, resolution: u32) {
+        // Ensure resolution is between 32 and 512 and a multiple of 32
+        let resolution = (resolution / 32).max(1).min(16) * 32;
+        self.resolution = resolution;
+        
+        // Update the resolution buffer
+        let resolution_data = [resolution, 0, 0, 0]; // Only first value is used
+        self.queue.write_buffer(&self.resolution_buf, 0, bytemuck::cast_slice(&resolution_data));
+        
+        web_sys::console::log_1(&format!("Resolution set to {} points", resolution).into());
+    }
+    
     #[wasm_bindgen(js_name = "render")]
     pub fn render(&self) {
         // Use a scope to ensure all rendering is complete before presenting
@@ -328,9 +368,9 @@ impl Visualizer {
                 rpass.set_pipeline(&self.pipeline);
                 rpass.set_bind_group(0, &self.bind_group, &[]);
                 
-                // Draw line connecting 512 frequency points
-                web_sys::console::log_1(&"Drawing frequency line with 512 vertices".into());
-                rpass.draw(0..512, 0..1);
+                // Draw line connecting frequency points based on current resolution
+                web_sys::console::log_1(&format!("Drawing frequency line with {} vertices", self.resolution * 2).into());
+                rpass.draw(0..(self.resolution * 2), 0..1);
                 web_sys::console::log_1(&"Draw call completed".into());
             }
             

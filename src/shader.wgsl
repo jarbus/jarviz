@@ -9,21 +9,39 @@ struct AudioData {
     data: array<vec4<f32>, 256>,
 }
 
+struct ResolutionData {
+    resolution: u32,
+    _padding1: u32,
+    _padding2: u32,
+    _padding3: u32,
+}
+
 @group(0) @binding(0)
 var<uniform> audio_data: AudioData;
+
+@group(0) @binding(1)
+var<uniform> resolution_data: ResolutionData;
 
 @vertex
 fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     var output: VertexOutput;
     
+    // Get the current resolution
+    let resolution = resolution_data.resolution;
+    let half_resolution = resolution / 2u;
+    
     // For a line, we only need the top points of what were previously bars
     // Each vertex is a single point in the line
     let bin_index = vertex_index;
     
+    // Calculate the data index based on the resolution
+    // We need to map the vertex_index to the appropriate data point
+    let data_index = min(bin_index * 512u / (resolution * 2u), 511u);
+    
     // Get the frequency magnitude (normalized between 0 and 1)
     // Calculate which vec4 and which component to access
-    let vec_index = bin_index / 4u;
-    let component_index = bin_index % 4u;
+    let vec_index = data_index / 4u;
+    let component_index = data_index % 4u;
     
     // Get the appropriate component from the vec4
     let magnitude = select(
@@ -46,16 +64,16 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     // X position: map bin index to create symmetrical display
     var x_pos: f32;
     
-    // Map bin_index from [0,511] to position on x-axis
+    // Map bin_index from [0, resolution*2-1] to position on x-axis
     // For perfect symmetry with high frequencies in middle:
-    // - Bins 0-255: Low to high frequencies on left side
-    // - Bins 256-511: High to low frequencies on right side
-    if (bin_index < 256u) {
-        // Left side: map [0,255] to [-1.0,0.0]
-        x_pos = -1.0 + (f32(bin_index) / 255.0);
+    // - First half: Low to high frequencies on left side
+    // - Second half: High to low frequencies on right side
+    if (bin_index < resolution) {
+        // Left side: map [0, resolution-1] to [-1.0,0.0]
+        x_pos = -1.0 + (f32(bin_index) / f32(resolution - 1u));
     } else {
-        // Right side: map [256,511] to [0.0,1.0]
-        x_pos = (f32(bin_index) - 256.0) / 255.0;
+        // Right side: map [resolution, resolution*2-1] to [0.0,1.0]
+        x_pos = (f32(bin_index) - f32(resolution)) / f32(resolution - 1u);
     }
     
     // Y position: only the top of what was previously a bar
