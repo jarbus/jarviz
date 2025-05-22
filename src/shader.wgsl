@@ -48,13 +48,13 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     let normalized_bin = f32(bin_index) / 512.0;
     
     // Transform the bin index to create symmetry
-    // This maps [0, 0.5] to [-1, 0] and [0.5, 1] to [0, 1]
+    // For symmetrical display: low frequencies on both ends, high in middle
     let x_pos = if normalized_bin < 0.5 {
-        // Left side (low frequencies)
-        (normalized_bin * 2.0) - 1.0
+        // Left side (low to mid frequencies)
+        -1.0 + normalized_bin * 2.0
     } else {
-        // Right side (low frequencies)
-        1.0 - ((normalized_bin - 0.5) * 2.0)
+        // Right side (mid to low frequencies)
+        3.0 - normalized_bin * 2.0 - 1.0
     };
     
     // Y position: bottom of bar is always at -0.8, top depends on magnitude
