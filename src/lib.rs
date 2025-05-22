@@ -188,6 +188,7 @@ impl Visualizer {
                 }
             };
         
+        web_sys::console::error_1(&format!("Result assigned").into());
         let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
         
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { 
@@ -195,6 +196,7 @@ impl Visualizer {
         });
         
         {
+            web_sys::console::error_1(&format!("Main Render Pass").into());
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Main Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
