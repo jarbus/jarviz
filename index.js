@@ -86,27 +86,25 @@ async function run() {
           debugElement.textContent = `Audio data: min=${Math.min(...data)}, max=${Math.max(...data)}, avg=${avg.toFixed(2)}`;
           
           // Try to call methods with more error handling
+          let hasError = false;
+          
           try {
-            if (typeof viz.update === 'function') {
               viz.update(data);
-            } else {
-              console.error("viz.update is not a function, it's a:", typeof viz.update);
-              console.log("Full viz object:", viz);
-            }
-            
-            // Only render if we're not already rendering
-            if (typeof viz.render === 'function') {
-              // Use requestAnimationFrame to throttle render calls
               viz.render();
-            } else {
-              console.error("viz.render is not a function, it's a:", typeof viz.render);
-              console.log("Full viz object:", viz);
-            }
           } catch (e) {
             console.error("Error calling viz methods:", e);
             console.error("Error details:", e.stack);
+            hasError = true;
+            message.textContent = `Error: ${e.message}`;
           }
-          animationId = requestAnimationFrame(frame);
+          
+          // Only continue the animation if there were no errors
+          if (!hasError) {
+            animationId = requestAnimationFrame(frame);
+          } else {
+            console.log("Stopping animation due to errors");
+            // Don't call cancelAnimationFrame here as we're not scheduling a new frame
+          }
         }
         animationId = requestAnimationFrame(frame);
         
