@@ -301,6 +301,14 @@ impl Visualizer {
             }
         }
         
+        // Handle the center value (position 255-256) specially
+        // This ensures we don't have a gap in the middle of the visualization
+        if magnitude_pairs.len() > 0 {
+            let last_magnitude = magnitude_pairs.last().unwrap().1;
+            frequency_data[255] = last_magnitude;
+            frequency_data[256] = last_magnitude;
+        }
+        
         // Check if we have any non-zero values
         let max_magnitude = frequency_data.iter().fold(0.0f32, |a, &b| a.max(b));
         web_sys::console::log_1(&format!("FFT data - Max magnitude: {}", max_magnitude).into());
