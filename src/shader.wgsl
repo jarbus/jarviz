@@ -41,7 +41,7 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     );
     
     // Force a minimum magnitude for testing
-    let test_magnitude = max(magnitude, 0.2);
+    let test_magnitude = max(magnitude, 0.05);
     
     // X position: map bin index to [-1, 1]
     let x_pos = (f32(bin_index) / 512.0) * 2.0 - 1.0;

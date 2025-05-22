@@ -154,14 +154,58 @@ impl Visualizer {
 
     #[wasm_bindgen(js_name = "update")]
     pub fn update(&self, data: &[u8]) {
+        // Debug the raw audio data
+        let data_len = data.len();
+        let data_sum: u32 = data.iter().map(|&x| x as u32).sum();
+        let data_avg = if data_len > 0 { data_sum as f32 / data_len as f32 } else { 0.0 };
+        web_sys::console::log_1(&format!("Raw audio data: len={}, avg={:.2}, first few=[{}, {}, {}]", 
+            data_len, data_avg, 
+            if data_len > 0 { data[0] } else { 0 },
+            if data_len > 1 { data[1] } else { 0 },
+            if data_len > 2 { data[2] } else { 0 }).into());
+        
+        // Check if we have valid audio data
+        if data_len < 10 || (data_avg > 127.0 - 1.0 && data_avg < 127.0 + 1.0) {
+            // If no valid audio data, use test data instead
+            web_sys::console::log_1(&"Using test data for visualization".into());
+            
+            // Create test frequency data (a simple pattern)
+            let mut test_data = [0.0f32; 1024];
+            for i in 0..512 {
+                // Create some interesting patterns
+                let normalized_i = i as f32 / 512.0;
+                
+                // Pattern 1: A few peaks
+                if i % 50 < 5 {
+                    test_data[i] = 0.8 - (i % 50) as f32 * 0.15;
+                }
+                
+                // Pattern 2: Higher frequencies have smaller amplitudes
+                test_data[i] = test_data[i].max(0.7 - normalized_i * 0.6);
+                
+                // Pattern 3: Some random-looking variations
+                if i % 17 == 0 {
+                    test_data[i] = test_data[i].max(0.5);
+                }
+            }
+            
+            // Copy test data to the buffer
+            self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&test_data));
+            return;
+        }
+        
         // Convert u8 audio data to f32 and normalize to [-1.0, 1.0]
         let mut time_domain = vec![0.0f32; 1024]; // Temporary buffer
         
         // Only use the first 1024 samples or pad with zeros if fewer
         let samples_to_use = std::cmp::min(data.len(), 1024);
         for i in 0..samples_to_use {
-            // Normalize to [-1.0, 1.0]
-            time_domain[i] = ((data[i] as f32 / 128.0) - 1.0);
+            // Normalize to [-1.0, 1.0] and apply a window function
+            let sample = ((data[i] as f32 / 128.0) - 1.0);
+            
+            // Apply Hann window to reduce spectral leakage
+            let window = 0.5 * (1.0 - (2.0 * std::f32::consts::PI * i as f32 / 1024.0).cos());
+            time_domain[i] = sample * window;
         }
         
         // Prepare FFT input (complex numbers)
@@ -178,16 +222,11 @@ impl Visualizer {
         // We only need the first half (512 points) due to Nyquist theorem
         let mut frequency_data = [0.0f32; 1024];
         for i in 0..512 {
-            // Calculate magnitude and normalize
-            let magnitude = (fft_input[i].norm() / 1024.0).sqrt();
+            // Calculate magnitude (absolute value of complex number)
+            let magnitude = fft_input[i].norm().sqrt() / 32.0; // Adjust scaling factor
             
             // Apply some scaling to make the visualization more visible
-            // Use logarithmic scaling for better visualization of audio spectrum
-            let scaled_magnitude = if magnitude > 0.0 {
-                (1.0 + magnitude.log10() * 3.0).max(0.0).min(1.0)
-            } else {
-                0.0
-            };
+            let scaled_magnitude = magnitude.min(1.0);
             
             // Store the magnitude (we'll use 512 points for the visualization)
             frequency_data[i] = scaled_magnitude;
@@ -198,7 +237,7 @@ impl Visualizer {
         web_sys::console::log_1(&format!("FFT data - Max magnitude: {}", max_magnitude).into());
         
         // Log a few specific frequency bins to see if they have values
-        web_sys::console::log_1(&format!("Frequency bins [10, 50, 100, 200]: [{}, {}, {}, {}]", 
+        web_sys::console::log_1(&format!("Frequency bins [10, 50, 100, 200]: [{:.4}, {:.4}, {:.4}, {:.4}]", 
             frequency_data[10], frequency_data[50], frequency_data[100], frequency_data[200]).into());
         
         // Create properly aligned data for the shader (vec4 array)
