@@ -215,10 +215,10 @@ impl Visualizer {
             let magnitude = fft_input[i].norm().sqrt() / 32.0; // Adjust scaling factor
             
             // Apply some scaling to make the visualization more visible
-            let scaled_magnitude = magnitude.min(1.0);
+            // let scaled_magnitude = magnitude.min(1.0);
             
             // Store the frequency bin index and its magnitude
-            magnitude_pairs.push((i, scaled_magnitude));
+            magnitude_pairs.push((i, magnitude));
         }
         
         // Apply frequency weighting to reduce high frequencies
