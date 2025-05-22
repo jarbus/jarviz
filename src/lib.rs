@@ -221,6 +221,19 @@ impl Visualizer {
             magnitude_pairs.push((i, scaled_magnitude));
         }
         
+        // Apply frequency weighting to reduce high frequencies
+        for i in 0..256 {
+            // Calculate a weight that decreases as frequency increases
+            // This is a simple logarithmic weighting function
+            let frequency_weight = 1.0 - (i as f32 / 256.0).powf(0.5);
+            
+            // Apply the weight to the magnitude
+            let weighted_magnitude = magnitude_pairs[i].1 * frequency_weight;
+            
+            // Update the magnitude pair with the weighted value
+            magnitude_pairs[i] = (magnitude_pairs[i].0, weighted_magnitude);
+        }
+        
         // Sort by magnitude (ascending order - smaller values first)
         magnitude_pairs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
         
