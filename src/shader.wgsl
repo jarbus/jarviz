@@ -43,8 +43,19 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     // Force a minimum magnitude for testing
     let test_magnitude = max(magnitude, 0.05);
     
-    // X position: map bin index to [-1, 1]
-    let x_pos = (f32(bin_index) / 512.0) * 2.0 - 1.0;
+    // X position: map bin index to create symmetrical display
+    // Lower frequencies on the edges, higher frequencies in the middle
+    let normalized_bin = f32(bin_index) / 512.0;
+    
+    // Transform the bin index to create symmetry
+    // This maps [0, 0.5] to [-1, 0] and [0.5, 1] to [0, 1]
+    let x_pos = if normalized_bin < 0.5 {
+        // Left side (low frequencies)
+        (normalized_bin * 2.0) - 1.0
+    } else {
+        // Right side (low frequencies)
+        1.0 - ((normalized_bin - 0.5) * 2.0)
+    };
     
     // Y position: bottom of bar is always at -0.8, top depends on magnitude
     // Amplify the magnitude to make it more visible
@@ -53,8 +64,9 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     // Position in clip space
     output.position = vec4<f32>(x_pos, y_pos, 0.0, 1.0);
     
-    // Color based on frequency (blue for low, green for mid, red for high)
-    let normalized_freq = f32(bin_index) / 512.0;
+    // Color based on frequency position
+    // For symmetrical display, we want the same colors on both sides
+    let normalized_freq = abs(x_pos); // Distance from center
     output.color = vec4<f32>(
         normalized_freq,           // Red increases with frequency
         1.0 - abs(normalized_freq - 0.5) * 2.0,  // Green peaks in the middle
