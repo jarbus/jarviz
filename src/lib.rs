@@ -164,36 +164,6 @@ impl Visualizer {
             if data_len > 1 { data[1] } else { 0 },
             if data_len > 2 { data[2] } else { 0 }).into());
         
-        // Check if we have valid audio data
-        if data_len < 10 || (data_avg > 127.0 - 1.0 && data_avg < 127.0 + 1.0) {
-            // If no valid audio data, use test data instead
-            web_sys::console::log_1(&"Using test data for visualization".into());
-            
-            // Create test frequency data (a simple pattern)
-            let mut test_data = [0.0f32; 1024];
-            for i in 0..512 {
-                // Create some interesting patterns
-                let normalized_i = i as f32 / 512.0;
-                
-                // Pattern 1: A few peaks
-                if i % 50 < 5 {
-                    test_data[i] = 0.8 - (i % 50) as f32 * 0.15;
-                }
-                
-                // Pattern 2: Higher frequencies have smaller amplitudes
-                test_data[i] = test_data[i].max(0.7 - normalized_i * 0.6);
-                
-                // Pattern 3: Some random-looking variations
-                if i % 17 == 0 {
-                    test_data[i] = test_data[i].max(0.5);
-                }
-            }
-            
-            // Copy test data to the buffer
-            self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&test_data));
-            return;
-        }
-        
         // Convert u8 audio data to f32 and normalize to [-1.0, 1.0]
         let mut time_domain = vec![0.0f32; 1024]; // Temporary buffer
         
