@@ -193,25 +193,24 @@ impl Visualizer {
         let mut frequency_data = [0.0f32; 1024];
         
         // Rearrange frequency bins for symmetrical display
-        // Low frequencies in the middle, high frequencies on the edges
-        for i in 0..512 {
+        // High frequencies in the middle, low frequencies on the edges
+        for i in 0..256 {
             // Calculate magnitude (absolute value of complex number)
             let magnitude = fft_input[i].norm().sqrt() / 32.0; // Adjust scaling factor
             
             // Apply some scaling to make the visualization more visible
             let scaled_magnitude = magnitude.min(1.0);
             
-            // Store the magnitude (we'll use 512 points for the visualization)
-            // Remap the indices to put low frequencies in the middle
-            let target_index = if i < 256 {
-                // First half goes from middle to left edge (255 to 0)
-                255 - i
-            } else {
-                // Second half goes from middle to right edge (256 to 511)
-                i
-            };
+            // Mirror the data for perfect symmetry:
+            // - Low frequencies (near 0) go to both edges
+            // - High frequencies (near 255) go to the middle
             
-            frequency_data[target_index] = scaled_magnitude;
+            // Left side: i=0 (lowest freq) goes to index 0, i=255 (highest) goes to 255
+            frequency_data[i] = scaled_magnitude;
+            
+            // Right side: i=0 (lowest freq) goes to index 511, i=255 (highest) goes to 256
+            // This creates a mirror image
+            frequency_data[511 - i] = scaled_magnitude;
         }
         
         // Check if we have any non-zero values
