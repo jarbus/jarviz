@@ -371,7 +371,7 @@ impl Visualizer {
                 
                 // Draw line connecting frequency points based on current resolution
                 let center = self.resolution; // Center position
-                let bar_width = 2.0; // Base width for bars
+                let bar_width = 6.0; // Base width for bars
 
                 for i in 0..(self.resolution * 2) {
                     let width = bar_width * (1.0 - (i as f32 / (self.resolution * 2) as f32).abs()); // Wider towards center
