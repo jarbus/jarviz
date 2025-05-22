@@ -51,10 +51,10 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     // For symmetrical display: low frequencies on both ends, high in middle
     let x_pos = if normalized_bin < 0.5 {
         // Left side (low to mid frequencies)
-        -1.0 + normalized_bin * 2.0;
+        -1.0 + normalized_bin * 2.0
     } else {
         // Right side (mid to low frequencies)
-        3.0 - normalized_bin * 2.0 - 1.0;
+        3.0 - normalized_bin * 2.0 - 1.0
     };
     
     // Y position: bottom of bar is always at -0.8, top depends on magnitude
