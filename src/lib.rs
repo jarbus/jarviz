@@ -207,9 +207,9 @@ impl Visualizer {
         // Extract magnitudes from complex FFT results
         // We only need the first half (512 points) due to Nyquist theorem
         let mut frequency_data = [0.0f32; 1024];
+        let mut magnitude_pairs = Vec::with_capacity(256);
         
-        // Rearrange frequency bins for symmetrical display
-        // High frequencies in the middle, low frequencies on the edges
+        // Calculate magnitudes for all frequency bins
         for i in 0..256 {
             // Calculate magnitude (absolute value of complex number)
             let magnitude = fft_input[i].norm().sqrt() / 32.0; // Adjust scaling factor
@@ -217,16 +217,29 @@ impl Visualizer {
             // Apply some scaling to make the visualization more visible
             let scaled_magnitude = magnitude.min(1.0);
             
-            // Mirror the data for perfect symmetry:
-            // - Low frequencies (near 0) go to both edges
-            // - High frequencies (near 255) go to the middle
+            // Store the frequency bin index and its magnitude
+            magnitude_pairs.push((i, scaled_magnitude));
+        }
+        
+        // Sort by magnitude (ascending order - smaller values first)
+        magnitude_pairs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+        
+        // Rearrange frequency bins for symmetrical display
+        // Smaller magnitudes on the edges, larger magnitudes in the middle
+        for (position, (original_index, magnitude)) in magnitude_pairs.iter().enumerate() {
+            // Map position from [0,255] to positions on both sides of the visualization
+            // Smaller magnitudes (early in the sorted list) go to the edges
+            // Larger magnitudes (later in the sorted list) go to the middle
             
-            // Left side: i=0 (lowest freq) goes to index 0, i=255 (highest) goes to 255
-            frequency_data[i] = scaled_magnitude;
+            // Left side: position 0 goes to index 0, position 255 goes to 255
+            let left_index = position;
             
-            // Right side: i=0 (lowest freq) goes to index 511, i=255 (highest) goes to 256
-            // This creates a mirror image
-            frequency_data[511 - i] = scaled_magnitude;
+            // Right side: position 0 goes to index 511, position 255 goes to 256
+            let right_index = 511 - position;
+            
+            // Place the magnitude at both the left and right positions for symmetry
+            frequency_data[left_index] = *magnitude;
+            frequency_data[right_index] = *magnitude;
         }
         
         // Check if we have any non-zero values
