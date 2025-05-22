@@ -301,9 +301,9 @@ impl Visualizer {
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color {
-                                r: 0.1, // Slightly lighter background to see if rendering is happening
+                                r: 0.0, // Pure black background
                                 g: 0.0,
-                                b: 0.1,
+                                b: 0.0,
                                 a: 1.0,
                             }),
                             store: true,

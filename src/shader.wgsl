@@ -70,15 +70,8 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     // Position in clip space
     output.position = vec4<f32>(x_pos, y_pos, 0.0, 1.0);
     
-    // Color based on frequency position
-    // For symmetrical display, we want the same colors on both sides
-    let normalized_freq = abs(x_pos); // Distance from center
-    output.color = vec4<f32>(
-        normalized_freq,           // Red increases with frequency
-        1.0 - abs(normalized_freq - 0.5) * 2.0,  // Green peaks in the middle
-        1.0 - normalized_freq,     // Blue decreases with frequency
-        1.0
-    );
+    // All colors are white
+    output.color = vec4<f32>(1.0, 1.0, 1.0, 1.0);
     
     return output;
 }
