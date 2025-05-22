@@ -268,17 +268,21 @@ impl Visualizer {
         // Keep only the top 50% of frequencies (128 out of 256)
         magnitude_pairs.truncate(128);
         
-        // Sort again by frequency bin for proper arrangement
-        magnitude_pairs.sort_by(|a, b| a.0.cmp(&b.0));
+        // Sort by magnitude (ascending order - smaller values first)
+        magnitude_pairs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
         
-        // Place the top 50% of frequencies in the frequency data array
-        // We'll create a symmetrical display with these frequencies
-        for (i, (original_index, magnitude)) in magnitude_pairs.iter().enumerate() {
-            // Map the 128 frequencies to 256 positions (0-255) for the left side
-            let left_index = i * 2;
+        // Rearrange frequency bins for symmetrical display
+        // Smaller magnitudes on the edges, larger magnitudes in the middle
+        for (position, (original_index, magnitude)) in magnitude_pairs.iter().enumerate() {
+            // Map position from [0,127] to positions on both sides of the visualization
+            // Smaller magnitudes (early in the sorted list) go to the edges
+            // Larger magnitudes (later in the sorted list) go to the middle
             
-            // Mirror on the right side (256-511)
-            let right_index = 511 - (i * 2);
+            // Left side: position 0 goes to index 0, position 127 goes to 254
+            let left_index = position * 2;
+            
+            // Right side: position 0 goes to index 511, position 127 goes to 257
+            let right_index = 511 - (position * 2);
             
             // Place the magnitude at both the left and right positions for symmetry
             frequency_data[left_index] = *magnitude;
