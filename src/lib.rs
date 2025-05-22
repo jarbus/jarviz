@@ -1,5 +1,6 @@
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlCanvasElement;
+use rustfft::{FftPlanner, num_complex::Complex};
 
 #[wasm_bindgen]
 pub struct Visualizer {
@@ -112,7 +113,7 @@ impl Visualizer {
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::LineStrip, // Use line strip to connect points
+                topology: wgpu::PrimitiveTopology::TriangleStrip, // Use triangle strip for frequency bars
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
@@ -154,31 +155,51 @@ impl Visualizer {
     #[wasm_bindgen(js_name = "update")]
     pub fn update(&self, data: &[u8]) {
         web_sys::console::log_1(&"Rust: update method called".into());
-        // Convert u8 audio data to vec4<f32> and normalize to [-1.0, 1.0]
-        // We need 256 vec4s to store 1024 samples
-        let mut float_data = vec![0.0f32; 1024]; // Temporary buffer
+        
+        // Convert u8 audio data to f32 and normalize to [-1.0, 1.0]
+        let mut time_domain = vec![0.0f32; 1024]; // Temporary buffer
         
         // Only use the first 1024 samples or pad with zeros if fewer
         let samples_to_use = std::cmp::min(data.len(), 1024);
         for i in 0..samples_to_use {
-            // Normalize and amplify for better visibility
-            float_data[i] = ((data[i] as f32 / 128.0) - 1.0) * 2.0;
+            // Normalize to [-1.0, 1.0]
+            time_domain[i] = ((data[i] as f32 / 128.0) - 1.0);
         }
         
-        // Log the first few samples for debugging
-        web_sys::console::log_1(&format!("Audio samples: {:?}", &float_data[0..5]).into());
+        // Prepare FFT input (complex numbers)
+        let mut fft_input: Vec<Complex<f32>> = time_domain.iter()
+            .map(|&x| Complex { re: x, im: 0.0 })
+            .collect();
         
-        // Create aligned data as vec4 array for proper shader alignment
-        let mut aligned_data = [0.0f32; 1024];
-        for i in 0..samples_to_use {
-            aligned_data[i] = float_data[i];
+        // Create FFT planner and perform forward FFT
+        let mut planner = FftPlanner::new();
+        let fft = planner.plan_fft_forward(1024);
+        fft.process(&mut fft_input);
+        
+        // Extract magnitudes from complex FFT results
+        // We only need the first half (512 points) due to Nyquist theorem
+        let mut frequency_data = [0.0f32; 1024];
+        for i in 0..512 {
+            // Calculate magnitude and normalize
+            let magnitude = (fft_input[i].norm() / 1024.0).sqrt();
+            
+            // Apply some scaling to make the visualization more visible
+            // Use logarithmic scaling for better visualization of audio spectrum
+            let scaled_magnitude = if magnitude > 0.0 {
+                (1.0 + magnitude.log10() * 2.0).max(0.0).min(1.0)
+            } else {
+                0.0
+            };
+            
+            // Store the magnitude (we'll use 512 points for the visualization)
+            frequency_data[i] = scaled_magnitude;
         }
         
         // Log some values to verify data
-        web_sys::console::log_1(&format!("First few aligned samples: {:?}", &aligned_data[0..5]).into());
+        web_sys::console::log_1(&format!("First few frequency magnitudes: {:?}", &frequency_data[0..5]).into());
         
-        // Copy aligned data to the buffer
-        self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&aligned_data));
+        // Copy frequency data to the buffer
+        self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&frequency_data));
     }
 
     // Track if we're currently rendering to avoid acquiring the surface multiple times
