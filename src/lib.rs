@@ -370,8 +370,13 @@ impl Visualizer {
                 rpass.set_bind_group(0, &self.bind_group, &[]);
                 
                 // Draw line connecting frequency points based on current resolution
-                web_sys::console::log_1(&format!("Drawing frequency line with {} vertices", self.resolution * 2).into());
-                rpass.draw(0..(self.resolution * 2), 0..1);
+                let center = self.resolution; // Center position
+                let bar_width = 2.0; // Base width for bars
+
+                for i in 0..(self.resolution * 2) {
+                    let width = bar_width * (1.0 - (i as f32 / (self.resolution * 2) as f32).abs()); // Wider towards center
+                    rpass.draw(0..(self.resolution * 2), 0..1);
+                }
                 web_sys::console::log_1(&"Draw call completed".into());
             }
             
