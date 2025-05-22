@@ -52,7 +52,9 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     var x_pos: f32;
     
     // Map bin_index from [0,511] to position on x-axis
-    // We want bins 0-255 on left side, 256-511 on right side
+    // For perfect symmetry with high frequencies in middle:
+    // - Bins 0-255: Low to high frequencies on left side
+    // - Bins 256-511: High to low frequencies on right side
     if (bin_index < 256u) {
         // Left side: map [0,255] to [-1.0,0.0]
         x_pos = -1.0 + (f32(bin_index) / 255.0);
