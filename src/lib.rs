@@ -251,8 +251,9 @@ impl Visualizer {
         // Apply frequency weighting to reduce high frequencies
         for i in 0..256 {
             // Calculate a weight that decreases as frequency increases
-            // This is a simple logarithmic weighting function
-            let frequency_weight = 1.0 - (i as f32 / 256.0).powf(0.5);
+            // This is a simple logarithmic weighting function TODO CHANGE powf to 0.5 which is
+            // sqrt
+            let frequency_weight = 1.0 - (i as f32 / 256.0).powf(1.0);
             
             // Apply the weight to the magnitude
             let weighted_magnitude = magnitude_pairs[i].1 * frequency_weight;
