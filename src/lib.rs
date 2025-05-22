@@ -186,7 +186,7 @@ impl Visualizer {
             // Apply some scaling to make the visualization more visible
             // Use logarithmic scaling for better visualization of audio spectrum
             let scaled_magnitude = if magnitude > 0.0 {
-                (1.0 + magnitude.log10() * 2.0).max(0.0).min(1.0)
+                (1.0 + magnitude.log10() * 3.0).max(0.0).min(1.0)
             } else {
                 0.0
             };
@@ -198,8 +198,18 @@ impl Visualizer {
         // Log some values to verify data
         web_sys::console::log_1(&format!("First few frequency magnitudes: {:?}", &frequency_data[0..5]).into());
         
-        // Copy frequency data to the buffer
-        self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&frequency_data));
+        // Check if we have any non-zero values
+        let max_magnitude = frequency_data.iter().fold(0.0f32, |a, &b| a.max(b));
+        web_sys::console::log_1(&format!("Max magnitude: {}", max_magnitude).into());
+        
+        // Create properly aligned data for the shader (vec4 array)
+        let mut aligned_data = [0.0f32; 1024];
+        for i in 0..1024 {
+            aligned_data[i] = if i < 512 { frequency_data[i] } else { 0.0 };
+        }
+        
+        // Copy aligned data to the buffer
+        self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&aligned_data));
     }
 
     // Track if we're currently rendering to avoid acquiring the surface multiple times
@@ -251,7 +261,7 @@ impl Visualizer {
                 rpass.set_pipeline(&self.pipeline);
                 rpass.set_bind_group(0, &self.bind_group, &[]);
                 
-                // Draw line segments for the waveform
+                // Draw frequency bars (2 vertices per bar, 512 bars = 1024 vertices)
                 rpass.draw(0..1024, 0..1);
                 
                 web_sys::console::log_1(&"Drawing waveform".into());
