@@ -289,7 +289,7 @@ impl Visualizer {
             frequency_data[right_index] = *magnitude;
             
             // Fill the gaps with interpolated values for smoother visualization
-            if i > 0 {
+            if position > 0 {
                 let prev_left = left_index - 2;
                 let prev_magnitude = frequency_data[prev_left];
                 frequency_data[left_index - 1] = (prev_magnitude + *magnitude) / 2.0;
