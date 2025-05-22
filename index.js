@@ -34,16 +34,6 @@ async function run() {
       togglePause(viz, pauseBtn, message);
     });
     
-    // Set up resolution slider
-    const resolutionSlider = document.getElementById("resolution-slider");
-    const resolutionValue = document.getElementById("resolution-value");
-    
-    resolutionSlider.addEventListener("input", () => {
-      const value = resolutionSlider.value;
-      resolutionValue.textContent = `${value} points`;
-      viz.setResolution(parseInt(value));
-    });
-    
     // Set up keyboard listener for space key
     document.addEventListener("keydown", (event) => {
       if (event.code === "Space") {

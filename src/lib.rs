@@ -338,19 +338,6 @@ impl Visualizer {
         self.paused
     }
     
-    #[wasm_bindgen(js_name = "setResolution")]
-    pub fn set_resolution(&mut self, resolution: u32) {
-        // Ensure resolution is between 32 and 512 and a multiple of 32
-        let resolution = (resolution / 32).max(1).min(16) * 32;
-        self.resolution = resolution;
-        
-        // Update the resolution buffer
-        let resolution_data = [resolution, 0, 0, 0]; // Only first value is used
-        self.queue.write_buffer(&self.resolution_buf, 0, bytemuck::cast_slice(&resolution_data));
-        
-        web_sys::console::log_1(&format!("Resolution set to {} points", resolution).into());
-    }
-    
     #[wasm_bindgen(js_name = "render")]
     pub fn render(&self) {
         // Use a scope to ensure all rendering is complete before presenting
