@@ -16,9 +16,9 @@ var<uniform> audio_data: AudioData;
 fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     var output: VertexOutput;
     
-    // Calculate which frequency bin this vertex represents
-    let bin_index = vertex_index / 2u;
-    let is_top = vertex_index % 2u;
+    // For a line, we only need the top points of what were previously bars
+    // Each vertex is a single point in the line
+    let bin_index = vertex_index;
     
     // Get the frequency magnitude (normalized between 0 and 1)
     // Calculate which vec4 and which component to access
@@ -44,11 +44,6 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     let test_magnitude = max(magnitude * 2.5, 0.05);
     
     // X position: map bin index to create symmetrical display
-    // Lower frequencies on the edges, higher frequencies in the middle
-    let normalized_bin = f32(bin_index) / 512.0;
-    
-    // Transform the bin index to create symmetry
-    // For symmetrical display: high frequencies in middle, low on edges
     var x_pos: f32;
     
     // Map bin_index from [0,511] to position on x-axis
@@ -63,14 +58,14 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
         x_pos = (f32(bin_index) - 256.0) / 255.0;
     }
     
-    // Y position: bottom of bar is always at -0.8, top depends on magnitude
+    // Y position: only the top of what was previously a bar
     // Amplify the magnitude to make it more visible
-    let y_pos = select(-0.8, -0.8 + test_magnitude * 1.8, is_top == 1u);
+    let y_pos = -0.8 + test_magnitude * 1.8;
     
     // Position in clip space
     output.position = vec4<f32>(x_pos, y_pos, 0.0, 1.0);
     
-    // All colors are white
+    // White line
     output.color = vec4<f32>(1.0, 1.0, 1.0, 1.0);
     
     return output;

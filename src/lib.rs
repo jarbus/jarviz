@@ -114,7 +114,7 @@ impl Visualizer {
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleStrip, // Use triangle strip for frequency bars
+                topology: wgpu::PrimitiveTopology::LineStrip, // Use line strip for connecting points
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
@@ -328,9 +328,9 @@ impl Visualizer {
                 rpass.set_pipeline(&self.pipeline);
                 rpass.set_bind_group(0, &self.bind_group, &[]);
                 
-                // Draw frequency bars (2 vertices per bar, 512 bars = 1024 vertices)
-                web_sys::console::log_1(&"Drawing frequency bars - 512 bars with 1024 vertices".into());
-                rpass.draw(0..1024, 0..1);
+                // Draw line connecting 512 frequency points
+                web_sys::console::log_1(&"Drawing frequency line with 512 vertices".into());
+                rpass.draw(0..512, 0..1);
                 web_sys::console::log_1(&"Draw call completed".into());
             }
             
