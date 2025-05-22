@@ -191,6 +191,9 @@ impl Visualizer {
         // Extract magnitudes from complex FFT results
         // We only need the first half (512 points) due to Nyquist theorem
         let mut frequency_data = [0.0f32; 1024];
+        
+        // Rearrange frequency bins for symmetrical display
+        // Low frequencies in the middle, high frequencies on the edges
         for i in 0..512 {
             // Calculate magnitude (absolute value of complex number)
             let magnitude = fft_input[i].norm().sqrt() / 32.0; // Adjust scaling factor
@@ -199,7 +202,16 @@ impl Visualizer {
             let scaled_magnitude = magnitude.min(1.0);
             
             // Store the magnitude (we'll use 512 points for the visualization)
-            frequency_data[i] = scaled_magnitude;
+            // Remap the indices to put low frequencies in the middle
+            let target_index = if i < 256 {
+                // First half goes from middle to left edge (255 to 0)
+                255 - i
+            } else {
+                // Second half goes from middle to right edge (256 to 511)
+                i
+            };
+            
+            frequency_data[target_index] = scaled_magnitude;
         }
         
         // Check if we have any non-zero values
