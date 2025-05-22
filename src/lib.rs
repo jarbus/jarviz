@@ -180,6 +180,7 @@ impl Visualizer {
         
         // Use a scope to ensure all rendering is complete before presenting
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            // Get the next texture to render to
             let frame = match self.surface.get_current_texture() {
                 Ok(frame) => frame,
                 Err(e) => {
@@ -187,45 +188,49 @@ impl Visualizer {
                     return;
                 }
             };
-        
-        web_sys::console::error_1(&format!("Result assigned").into());
-        let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { 
-            label: Some("Render Encoder") 
-        });
-        
-        {
-            web_sys::console::error_1(&format!("Main Render Pass").into());
-            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Main Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 1.0,
-                        }),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: None,
+            
+            // Create a view of the texture
+            let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
+            
+            // Create a command encoder to issue GPU commands
+            let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { 
+                label: Some("Render Encoder") 
             });
             
-            rpass.set_pipeline(&self.pipeline);
-            rpass.set_bind_group(0, &self.bind_group, &[]);
+            // Create a render pass
+            {
+                let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Main Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.0,
+                                g: 0.0,
+                                b: 0.0,
+                                a: 1.0,
+                            }),
+                            store: true,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                });
+                
+                rpass.set_pipeline(&self.pipeline);
+                rpass.set_bind_group(0, &self.bind_group, &[]);
+                
+                // Draw line segments for the waveform
+                rpass.draw(0..1024, 0..1);
+                
+                web_sys::console::log_1(&"Drawing waveform".into());
+            }
             
-            // Draw line segments for the waveform
-            rpass.draw(0..1024, 0..1);
+            // Submit the work to the GPU
+            self.queue.submit(std::iter::once(encoder.finish()));
             
-            web_sys::console::log_1(&"Drawing waveform".into());
-        }
-        
-        self.queue.submit(std::iter::once(encoder.finish()));
-        frame.present();
+            // Present the frame - this must be done after submitting the work
+            frame.present();
         }));
         
         if let Err(e) = result {
