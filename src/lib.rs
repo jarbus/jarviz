@@ -189,8 +189,10 @@ impl Visualizer {
                 }
             };
             
+            web_sys::console::log_1(&"creating view".into());
             // Create a view of the texture
             let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
+            web_sys::console::log_1(&" view created".into());
             
             // Create a command encoder to issue GPU commands
             let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { 
