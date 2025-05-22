@@ -154,8 +154,6 @@ impl Visualizer {
 
     #[wasm_bindgen(js_name = "update")]
     pub fn update(&self, data: &[u8]) {
-        web_sys::console::log_1(&"Rust: update method called".into());
-        
         // Convert u8 audio data to f32 and normalize to [-1.0, 1.0]
         let mut time_domain = vec![0.0f32; 1024]; // Temporary buffer
         
@@ -195,12 +193,13 @@ impl Visualizer {
             frequency_data[i] = scaled_magnitude;
         }
         
-        // Log some values to verify data
-        web_sys::console::log_1(&format!("First few frequency magnitudes: {:?}", &frequency_data[0..5]).into());
-        
         // Check if we have any non-zero values
         let max_magnitude = frequency_data.iter().fold(0.0f32, |a, &b| a.max(b));
-        web_sys::console::log_1(&format!("Max magnitude: {}", max_magnitude).into());
+        web_sys::console::log_1(&format!("FFT data - Max magnitude: {}", max_magnitude).into());
+        
+        // Log a few specific frequency bins to see if they have values
+        web_sys::console::log_1(&format!("Frequency bins [10, 50, 100, 200]: [{}, {}, {}, {}]", 
+            frequency_data[10], frequency_data[50], frequency_data[100], frequency_data[200]).into());
         
         // Create properly aligned data for the shader (vec4 array)
         let mut aligned_data = [0.0f32; 1024];
@@ -212,11 +211,8 @@ impl Visualizer {
         self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&aligned_data));
     }
 
-    // Track if we're currently rendering to avoid acquiring the surface multiple times
     #[wasm_bindgen(js_name = "render")]
     pub fn render(&self) {
-        web_sys::console::log_1(&"Rust: render method called".into());
-        
         // Use a scope to ensure all rendering is complete before presenting
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             // Get the next texture to render to
@@ -228,10 +224,8 @@ impl Visualizer {
                 }
             };
             
-            web_sys::console::log_1(&"creating view".into());
             // Create a view of the texture
             let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
-            web_sys::console::log_1(&" view created".into());
             
             // Create a command encoder to issue GPU commands
             let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { 
@@ -247,9 +241,9 @@ impl Visualizer {
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color {
-                                r: 0.0,
+                                r: 0.1, // Slightly lighter background to see if rendering is happening
                                 g: 0.0,
-                                b: 0.0,
+                                b: 0.1,
                                 a: 1.0,
                             }),
                             store: true,
@@ -262,9 +256,9 @@ impl Visualizer {
                 rpass.set_bind_group(0, &self.bind_group, &[]);
                 
                 // Draw frequency bars (2 vertices per bar, 512 bars = 1024 vertices)
+                web_sys::console::log_1(&"Drawing frequency bars - 512 bars with 1024 vertices".into());
                 rpass.draw(0..1024, 0..1);
-                
-                web_sys::console::log_1(&"Drawing waveform".into());
+                web_sys::console::log_1(&"Draw call completed".into());
             }
             
             // Submit the work to the GPU

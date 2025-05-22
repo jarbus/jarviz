@@ -40,12 +40,15 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
         component_index == 3u
     );
     
+    // Force a minimum magnitude for testing
+    let test_magnitude = max(magnitude, 0.2);
+    
     // X position: map bin index to [-1, 1]
     let x_pos = (f32(bin_index) / 512.0) * 2.0 - 1.0;
     
     // Y position: bottom of bar is always at -0.8, top depends on magnitude
     // Amplify the magnitude to make it more visible
-    let y_pos = select(-0.8, -0.8 + magnitude * 1.6, is_top == 1u);
+    let y_pos = select(-0.8, -0.8 + test_magnitude * 1.6, is_top == 1u);
     
     // Position in clip space
     output.position = vec4<f32>(x_pos, y_pos, 0.0, 1.0);
