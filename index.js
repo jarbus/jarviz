@@ -76,16 +76,6 @@ async function run() {
         // Create a buffer for the audio data
         const data = new Uint8Array(1024);
         
-        // Add a debug element to show audio values
-        let debugElement = document.getElementById("debug-element");
-        if (!debugElement) {
-          debugElement = document.createElement("div");
-          debugElement.id = "debug-element";
-          debugElement.style.fontSize = "10px";
-          debugElement.style.fontFamily = "monospace";
-          debugElement.style.marginTop = "10px";
-          document.body.appendChild(debugElement);
-        }
         
         // Reset pause state when loading new audio
         if (viz.isPaused()) {
@@ -94,9 +84,6 @@ async function run() {
         
         function frame() {
           analyser.getByteTimeDomainData(data);
-          
-          // Show some values on screen for debugging
-          debugElement.textContent = `Audio data: min=${Math.min(...data)}, max=${Math.max(...data)}, avg=${(data.reduce((a, b) => a + b, 0) / data.length).toFixed(2)}`;
           
           // Try to call methods with more error handling
           let hasError = false;
