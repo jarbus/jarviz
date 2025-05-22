@@ -262,25 +262,39 @@ impl Visualizer {
             magnitude_pairs[i] = (magnitude_pairs[i].0, weighted_magnitude);
         }
         
-        // Sort by magnitude (ascending order - smaller values first)
-        magnitude_pairs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+        // Sort by magnitude (descending order - larger values first)
+        magnitude_pairs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         
-        // Rearrange frequency bins for symmetrical display
-        // Smaller magnitudes on the edges, larger magnitudes in the middle
-        for (position, (original_index, magnitude)) in magnitude_pairs.iter().enumerate() {
-            // Map position from [0,255] to positions on both sides of the visualization
-            // Smaller magnitudes (early in the sorted list) go to the edges
-            // Larger magnitudes (later in the sorted list) go to the middle
+        // Keep only the top 50% of frequencies (128 out of 256)
+        magnitude_pairs.truncate(128);
+        
+        // Sort again by frequency bin for proper arrangement
+        magnitude_pairs.sort_by(|a, b| a.0.cmp(&b.0));
+        
+        // Place the top 50% of frequencies in the frequency data array
+        // We'll create a symmetrical display with these frequencies
+        for (i, (original_index, magnitude)) in magnitude_pairs.iter().enumerate() {
+            // Map the 128 frequencies to 256 positions (0-255) for the left side
+            let left_index = i * 2;
             
-            // Left side: position 0 goes to index 0, position 255 goes to 255
-            let left_index = position;
-            
-            // Right side: position 0 goes to index 511, position 255 goes to 256
-            let right_index = 511 - position;
+            // Mirror on the right side (256-511)
+            let right_index = 511 - (i * 2);
             
             // Place the magnitude at both the left and right positions for symmetry
             frequency_data[left_index] = *magnitude;
             frequency_data[right_index] = *magnitude;
+            
+            // Fill the gaps with interpolated values for smoother visualization
+            if i > 0 {
+                let prev_left = left_index - 2;
+                let prev_magnitude = frequency_data[prev_left];
+                frequency_data[left_index - 1] = (prev_magnitude + *magnitude) / 2.0;
+                
+                let prev_right = right_index + 2;
+                if prev_right < 512 {
+                    frequency_data[right_index + 1] = (prev_magnitude + *magnitude) / 2.0;
+                }
+            }
         }
         
         // Check if we have any non-zero values
