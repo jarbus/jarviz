@@ -12,6 +12,7 @@ pub struct Visualizer {
     bind_group: wgpu::BindGroup,
     surface: wgpu::Surface,
     surface_config: wgpu::SurfaceConfiguration,
+    paused: bool,
 }
 
 #[wasm_bindgen]
@@ -149,11 +150,26 @@ impl Visualizer {
             label: None,
         });
 
-        Visualizer { device, queue, pipeline, vertex_buf, data_buf, bind_group, surface, surface_config }
+        Visualizer { 
+            device, 
+            queue, 
+            pipeline, 
+            vertex_buf, 
+            data_buf, 
+            bind_group, 
+            surface, 
+            surface_config,
+            paused: false,
+        }
     }
 
     #[wasm_bindgen(js_name = "update")]
     pub fn update(&self, data: &[u8]) {
+        // If paused, don't update the visualization
+        if self.paused {
+            return;
+        }
+        
         // Debug the raw audio data
         let data_len = data.len();
         let data_sum: u32 = data.iter().map(|&x| x as u32).sum();
@@ -231,6 +247,17 @@ impl Visualizer {
         self.queue.write_buffer(&self.data_buf, 0, bytemuck::cast_slice(&aligned_data));
     }
 
+    #[wasm_bindgen(js_name = "togglePause")]
+    pub fn toggle_pause(&mut self) {
+        self.paused = !self.paused;
+        web_sys::console::log_1(&format!("Visualization paused: {}", self.paused).into());
+    }
+    
+    #[wasm_bindgen(js_name = "isPaused")]
+    pub fn is_paused(&self) -> bool {
+        self.paused
+    }
+    
     #[wasm_bindgen(js_name = "render")]
     pub fn render(&self) {
         // Use a scope to ensure all rendering is complete before presenting
