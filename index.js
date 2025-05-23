@@ -13,8 +13,6 @@ async function run() {
     
     const canvas = document.getElementById("gpu-canvas");
     const fileInput = document.getElementById("file-input");
-    const pauseBtn = document.getElementById("pause-btn");
-    
     // Since Visualizer constructor is async, we need to await it
     console.log("Creating Visualizer...");
     const vizPromise = new Visualizer("gpu-canvas");
@@ -29,19 +27,6 @@ async function run() {
     message.textContent = "Ready to visualize audio";
     document.body.insertBefore(message, canvas.nextSibling);
 
-    // Set up pause button
-    pauseBtn.addEventListener("click", () => {
-      togglePause(viz, pauseBtn, message);
-    });
-    
-    // Set up keyboard listener for space key
-    document.addEventListener("keydown", (event) => {
-      if (event.code === "Space") {
-        // Prevent default space behavior (like scrolling)
-        event.preventDefault();
-        togglePause(viz, pauseBtn, message);
-      }
-    });
 
     fileInput.onchange = async () => {
       try {
@@ -79,7 +64,8 @@ async function run() {
         
         // Reset pause state when loading new audio
         if (viz.isPaused()) {
-          togglePause(viz, pauseBtn, message);
+          viz.togglePause();
+          audioCtx.resume();
         }
         
         function frame() {
@@ -122,25 +108,5 @@ async function run() {
   }
 }
 
-// Function to toggle pause state
-function togglePause(viz, pauseBtn, message) {
-  viz.togglePause();
-  const isPaused = viz.isPaused();
-  
-  // Update button appearance
-  pauseBtn.textContent = isPaused ? "Resume (Space)" : "Pause (Space)";
-  pauseBtn.classList.toggle("paused", isPaused);
-  
-  // Pause/resume audio playback if context exists
-  if (audioCtx) {
-    if (isPaused) {
-      audioCtx.suspend();
-    } else {
-      audioCtx.resume();
-    }
-  }
-  
-  message.textContent = isPaused ? "Audio and visualization paused" : "Audio and visualization running";
-}
 
 run();
