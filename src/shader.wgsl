@@ -59,8 +59,8 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     );
     
     // Amplify the magnitude and set a minimum floor
-    // Since we're only showing top 50% of frequencies, we can reduce the amplification
-    let test_magnitude = max(magnitude * 2.0, 0.05);
+    // Since we're only showing top 25% of frequencies, we can increase the amplification
+    let test_magnitude = max(magnitude * 3.0, 0.05);
     
     // X position: map bin index to create symmetrical display
     var x_pos: f32;
