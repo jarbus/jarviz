@@ -24,10 +24,8 @@ async function run() {
           viz.togglePause();
           if (viz.isPaused()) {
             audioCtx.suspend();
-            message.textContent = "Audio and visualization paused";
           } else {
             audioCtx.resume();
-            message.textContent = "Audio and visualization running";
           }
         }
       }
@@ -39,11 +37,6 @@ async function run() {
     const viz = await vizPromise;
     console.log("Visualizer created successfully");
     
-    // Add a message to the page
-    const message = document.createElement("p");
-    message.id = "status-message";
-    message.textContent = "Ready to visualize audio";
-    document.body.insertBefore(message, canvas.nextSibling);
 
 
     fileInput.onchange = async () => {
@@ -56,7 +49,6 @@ async function run() {
           audioSource.stop();
         }
         
-        message.textContent = "Loading audio...";
         
         const file = fileInput.files[0];
         if (!file) return;
@@ -73,7 +65,6 @@ async function run() {
         audioSource.connect(analyser);
         analyser.connect(audioCtx.destination);
         
-        message.textContent = `Playing: ${file.name}`;
         audioSource.start();
 
         // Create a buffer for the audio data
@@ -84,7 +75,6 @@ async function run() {
         if (viz.isPaused()) {
           viz.togglePause();
           audioCtx.resume();
-          message.textContent = "Audio and visualization running";
         }
         
         function frame() {
@@ -99,7 +89,6 @@ async function run() {
           } catch (e) {
             console.error("Error calling viz methods:", e);
             hasError = true;
-            message.textContent = `Error: ${e.message}`;
           }
           
           // Only continue the animation if there were no errors
@@ -113,7 +102,6 @@ async function run() {
         
         // Handle when audio finishes playing
         audioSource.onended = () => {
-          message.textContent = "Audio playback complete";
           cancelAnimationFrame(animationId);
         };
       } catch (error) {
