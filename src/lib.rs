@@ -265,8 +265,8 @@ impl Visualizer {
         // Sort by magnitude (descending order - larger values first)
         magnitude_pairs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         
-        // Keep only the top 50% of frequencies (128 out of 256)
-        magnitude_pairs.truncate(128);
+        // Keep only the top 25% of frequencies (64 out of 256)
+        magnitude_pairs.truncate(64);
         
         // Sort by magnitude (ascending order - smaller values first)
         magnitude_pairs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
