@@ -14,6 +14,24 @@ async function run() {
     const canvas = document.getElementById("gpu-canvas");
     const fileInput = document.getElementById("file-input");
     // Since Visualizer constructor is async, we need to await it
+    
+    // Set up keyboard listener for space key
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "Space") {
+        // Prevent default space behavior (like scrolling)
+        event.preventDefault();
+        if (viz && audioCtx) {
+          viz.togglePause();
+          if (viz.isPaused()) {
+            audioCtx.suspend();
+            message.textContent = "Audio and visualization paused";
+          } else {
+            audioCtx.resume();
+            message.textContent = "Audio and visualization running";
+          }
+        }
+      }
+    });
     console.log("Creating Visualizer...");
     const vizPromise = new Visualizer("gpu-canvas");
     
@@ -66,6 +84,7 @@ async function run() {
         if (viz.isPaused()) {
           viz.togglePause();
           audioCtx.resume();
+          message.textContent = "Audio and visualization running";
         }
         
         function frame() {
