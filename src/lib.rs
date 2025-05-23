@@ -274,15 +274,15 @@ impl Visualizer {
         // Rearrange frequency bins for symmetrical display
         // Smaller magnitudes on the edges, larger magnitudes in the middle
         for (position, (original_index, magnitude)) in magnitude_pairs.iter().enumerate() {
-            // Map position from [0,127] to positions on both sides of the visualization
+            // Map position from [0,63] to positions on both sides of the visualization
             // Smaller magnitudes (early in the sorted list) go to the edges
             // Larger magnitudes (later in the sorted list) go to the middle
             
-            // Left side: position 0 goes to index 0, position 127 goes to 254
+            // Left side: position 0 goes to index 0, position 63 goes to 126
             let left_index = position * 2;
             
-            // Right side: position 0 goes to index 511, position 127 goes to 257
-            let right_index = 511 - (position * 2);
+            // Right side: position 0 goes to index 255, position 63 goes to 129
+            let right_index = 255 - (position * 2);
             
             // Place the magnitude at both the left and right positions for symmetry
             frequency_data[left_index] = *magnitude;
@@ -301,12 +301,12 @@ impl Visualizer {
             }
         }
         
-        // Handle the center value (position 255-256) specially
+        // Handle the center value (position 127-128) specially
         // This ensures we don't have a gap in the middle of the visualization
         if magnitude_pairs.len() > 0 {
             let last_magnitude = magnitude_pairs.last().unwrap().1;
-            frequency_data[255] = last_magnitude;
-            frequency_data[256] = last_magnitude;
+            frequency_data[127] = last_magnitude;
+            frequency_data[128] = last_magnitude;
         }
         
         // Check if we have any non-zero values
@@ -320,7 +320,7 @@ impl Visualizer {
         // Create properly aligned data for the shader (vec4 array)
         let mut aligned_data = [0.0f32; 1024];
         for i in 0..1024 {
-            aligned_data[i] = if i < 512 { frequency_data[i] } else { 0.0 };
+            aligned_data[i] = if i < 256 { frequency_data[i] } else { 0.0 };
         }
         
         // Copy aligned data to the buffer

@@ -36,7 +36,8 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     
     // Calculate the data index based on the resolution
     // We need to map the vertex_index to the appropriate data point
-    let data_index = min(bin_index * 512u / (resolution * 2u), 511u);
+    // Using 256 instead of 512 to shrink the line by half
+    let data_index = min(bin_index * 256u / (resolution * 2u), 255u);
     
     // Get the frequency magnitude (normalized between 0 and 1)
     // Calculate which vec4 and which component to access
