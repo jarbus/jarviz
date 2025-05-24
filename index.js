@@ -109,12 +109,20 @@ async function run() {
       seeking = true;
       const seekPosition = audioDuration * (seekSlider.value / 100);
       currentTimeDisplay.textContent = formatTime(seekPosition);
+      
+      // Update slider fill
+      const percentage = seekSlider.value;
+      seekSlider.style.background = `linear-gradient(to right, #ccffdd 0%, #ccffdd ${percentage}%, #333 ${percentage}%)`;
     });
     
     seekSlider.addEventListener("change", function() {
       if (audioCtx && audioSource && audioBuffer) {
         // We're still seeking during this handler
         seeking = true;
+        
+        // Update slider fill
+        const percentage = seekSlider.value;
+        seekSlider.style.background = `linear-gradient(to right, #ccffdd 0%, #ccffdd ${percentage}%, #333 ${percentage}%)`;
         
         // Remove the current onended handler before stopping to prevent it firing
         audioSource.onended = null;
@@ -236,6 +244,7 @@ async function run() {
         seekSlider.disabled = false;
         seekSlider.value = 0;
         currentTimeDisplay.textContent = "0:00";
+        seekSlider.style.background = `linear-gradient(to right, #ccffdd 0%, #ccffdd 0%, #333 0%)`;
         
         audioSource = audioCtx.createBufferSource();
         audioSource.buffer = buf;
@@ -310,6 +319,8 @@ async function run() {
                     if (Math.abs(sliderPosition - currentPosition) > 1.0) {
                       seekSlider.value = sliderPosition;
                       currentTimeDisplay.textContent = formatTime(constrainedTime);
+                      // Update slider fill
+                      seekSlider.style.background = `linear-gradient(to right, #ccffdd 0%, #ccffdd ${sliderPosition}%, #333 ${sliderPosition}%)`;
                       lastUpdateTime = now;
                     }
                   }
