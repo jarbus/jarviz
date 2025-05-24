@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WGPU Audio Visualizer</title>
+        
+  <title>jarviz</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -124,22 +124,20 @@
   </style>
 </head>
 <body>
-  <h1>WGPU Audio Visualizer</h1>
-  <p>Select an audio file to visualize:</p>
+
+  <h1>(jar)bus audio (vis)ualizer</h1>
+        <p>built with webGPU, runs locally (desktop only).</p>
   <div class="controls">
     <input type="file" id="file-input" accept="audio/*,.mp3,.m4a,.wav,.aac" />
     <button id="pause-btn">Pause</button>
   </div>
+  <canvas id="gpu-canvas" width="800" height="400" style="background-color: black;"></canvas>
+
   <div class="progress-container">
     <input type="range" id="seek-slider" min="0" max="100" value="0" step="0.1" class="slider" disabled>
     <div class="time-display">
       <span id="current-time">0:00</span> / <span id="duration">0:00</span>
     </div>
-  </div>
-  <canvas id="gpu-canvas" width="800" height="400" style="background-color: black;"></canvas>
-  <div class="mobile-hint">
-    Tap the Pause button to pause/resume the visualization<br>
-    <span style="color: #ff9900;">iOS users: If MP3 files appear grayed out, try using the "Browse" option instead of "Photo Library"</span>
   </div>
   <script type="module" src="./index.js"></script>
 </body>
