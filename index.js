@@ -15,21 +15,41 @@ async function run() {
     const fileInput = document.getElementById("file-input");
     // Since Visualizer constructor is async, we need to await it
     
-    // Set up keyboard listener for space key
+    // Set up keyboard listener for space key (desktop)
     document.addEventListener("keydown", (event) => {
       if (event.code === "Space") {
         // Prevent default space behavior (like scrolling)
         event.preventDefault();
-        if (viz && audioCtx) {
-          viz.togglePause();
-          if (viz.isPaused()) {
-            audioCtx.suspend();
-          } else {
-            audioCtx.resume();
-          }
-        }
+        togglePlayPause(viz, audioCtx);
       }
     });
+    
+    // Set up pause button for touch devices
+    const pauseBtn = document.getElementById("pause-btn");
+    pauseBtn.addEventListener("click", () => {
+      togglePlayPause(viz, audioCtx);
+      
+      // Update button appearance
+      if (viz && viz.isPaused()) {
+        pauseBtn.classList.add("paused");
+        pauseBtn.textContent = "Resume";
+      } else {
+        pauseBtn.classList.remove("paused");
+        pauseBtn.textContent = "Pause";
+      }
+    });
+    
+    // Helper function to toggle play/pause
+    function togglePlayPause(visualizer, context) {
+      if (visualizer && context) {
+        visualizer.togglePause();
+        if (visualizer.isPaused()) {
+          context.suspend();
+        } else {
+          context.resume();
+        }
+      }
+    }
     console.log("Creating Visualizer...");
     const vizPromise = new Visualizer("gpu-canvas");
     
@@ -54,27 +74,50 @@ async function run() {
         if (!file) return;
         
         const arrayBuffer = await file.arrayBuffer();
-        audioCtx = new AudioContext();
+        // Create audio context with mobile-friendly settings
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext({
+          latencyHint: 'interactive',
+          sampleRate: 44100
+        });
         
         const buf = await audioCtx.decodeAudioData(arrayBuffer);
         audioSource = audioCtx.createBufferSource();
         audioSource.buffer = buf;
 
         analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 2048;
+        // Use smaller FFT size on mobile for better performance
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        analyser.fftSize = isMobile ? 1024 : 2048;
         audioSource.connect(analyser);
         analyser.connect(audioCtx.destination);
         
         audioSource.start();
 
-        // Create a buffer for the audio data
-        const data = new Uint8Array(1024);
+        // Create a buffer for the audio data (size depends on FFT size)
+        const bufferSize = analyser.fftSize / 2;
+        const data = new Uint8Array(bufferSize);
         
         
         // Reset pause state when loading new audio
         if (viz.isPaused()) {
           viz.togglePause();
           audioCtx.resume();
+        }
+        
+        // Update pause button state
+        const pauseBtn = document.getElementById("pause-btn");
+        pauseBtn.classList.remove("paused");
+        pauseBtn.textContent = "Pause";
+        
+        // On iOS, we need user interaction to start audio
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent) && audioCtx.state === 'suspended') {
+          const resumeAudio = () => {
+            audioCtx.resume().then(() => {
+              document.body.removeEventListener('touchstart', resumeAudio);
+            });
+          };
+          document.body.addEventListener('touchstart', resumeAudio);
         }
         
         function frame() {

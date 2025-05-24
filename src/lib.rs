@@ -39,31 +39,57 @@ impl Visualizer {
         let canvas_height = canvas.height();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::GL, // Use WebGL explicitly
+            backends: wgpu::Backends::all(), // Try all available backends
             dx12_shader_compiler: Default::default(),
         });
         
         // For WebGL, we need to use the canvas with SurfaceTarget
         let surface = instance.create_surface_from_canvas(canvas).expect("Failed to create surface");
         
-        // Request adapter with fallback options
+        // Request adapter with power preference for mobile
         let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
+            power_preference: wgpu::PowerPreference::LowPower, // Better for mobile battery life
             compatible_surface: Some(&surface),
             force_fallback_adapter: false,
-        }).await.expect("Failed to find an appropriate adapter");
+        }).await.unwrap_or_else(|| {
+            // If first attempt fails, try again with fallback adapter
+            web_sys::console::warn_1(&"Primary adapter request failed, trying fallback".into());
+            instance.request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                compatible_surface: Some(&surface),
+                force_fallback_adapter: true,
+            }).await.expect("Failed to find any compatible adapter")
+        });
 
         // Log adapter info for debugging
         web_sys::console::log_1(&format!("Using adapter: {:?}", adapter.get_info().name).into());
 
+        // Request device with mobile-friendly limits
         let (device, queue) = adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 features: wgpu::Features::empty(),
-                limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                // Use more conservative limits for mobile
+                limits: if is_likely_mobile() {
+                    wgpu::Limits::downlevel_webgl2_defaults()
+                        .using_resolution(adapter.limits())
+                } else {
+                    wgpu::Limits::downlevel_webgl2_defaults()
+                },
             },
             None
         ).await.expect("Failed to request device");
+        
+        // Helper function to detect mobile devices
+        fn is_likely_mobile() -> bool {
+            let window = web_sys::window().unwrap();
+            let navigator = window.navigator();
+            let user_agent = navigator.user_agent().unwrap_or_default();
+            user_agent.contains("Android") || 
+            user_agent.contains("iPhone") || 
+            user_agent.contains("iPad") || 
+            user_agent.contains("Mobile")
+        }
         
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats[0]; // Choose the first available format
@@ -249,11 +275,23 @@ impl Visualizer {
         }
         
         // Apply frequency weighting to reduce high frequencies
+        // Use more aggressive weighting on mobile for better performance
+        let is_mobile = {
+            let window = web_sys::window().unwrap();
+            let navigator = window.navigator();
+            let user_agent = navigator.user_agent().unwrap_or_default();
+            user_agent.contains("Android") || 
+            user_agent.contains("iPhone") || 
+            user_agent.contains("iPad") || 
+            user_agent.contains("Mobile")
+        };
+        
         for i in 0..256 {
             // Calculate a weight that decreases as frequency increases
-            // This is a simple logarithmic weighting function TODO CHANGE powf to 0.5 which is
-            // sqrt
-            let frequency_weight = 1.0 - (i as f32 / 256.0).powf(1.0);
+            // Use sqrt (0.5 power) for more balanced frequency response
+            // On mobile, use more aggressive weighting (0.4 power) to reduce processing
+            let power = if is_mobile { 0.4 } else { 0.5 };
+            let frequency_weight = 1.0 - (i as f32 / 256.0).powf(power);
             
             // Apply the weight to the magnitude
             let weighted_magnitude = magnitude_pairs[i].1 * frequency_weight;
