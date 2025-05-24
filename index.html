@@ -85,12 +85,13 @@
   <h1>WGPU Audio Visualizer</h1>
   <p>Select an audio file to visualize:</p>
   <div class="controls">
-    <input type="file" id="file-input" accept="audio/*" />
+    <input type="file" id="file-input" accept="audio/*,.mp3,.m4a,.wav,.aac" />
     <button id="pause-btn">Pause</button>
   </div>
   <canvas id="gpu-canvas" width="800" height="400" style="background-color: black;"></canvas>
   <div class="mobile-hint">
-    Tap the Pause button to pause/resume the visualization
+    Tap the Pause button to pause/resume the visualization<br>
+    <span style="color: #ff9900;">iOS users: If MP3 files appear grayed out, try using the "Browse" option instead of "Photo Library"</span>
   </div>
   <script type="module" src="./index.js"></script>
 </body>
