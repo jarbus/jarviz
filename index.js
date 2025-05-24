@@ -226,6 +226,7 @@ async function run() {
         audioSource.onended = () => {
           cancelAnimationFrame(animationId);
           
+            console.log("ended")
           // Reset the slider to the end position
           seekSlider.value = 100;
           currentTimeDisplay.textContent = formatTime(audioDuration);
