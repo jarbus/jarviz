@@ -74,6 +74,13 @@ async function run() {
     
     seekSlider.addEventListener("change", function() {
       if (audioCtx && audioSource && audioBuffer) {
+        // Flag to prevent onended callback during seeking
+        const isUserSeeking = true;
+        
+        // Remove the current onended handler before stopping to prevent it firing
+        const originalOnEnded = audioSource.onended;
+        audioSource.onended = null;
+        
         // Stop current audio source
         audioSource.stop();
         
@@ -102,6 +109,26 @@ async function run() {
           pauseBtn.classList.remove("paused");
           pauseBtn.textContent = "Pause";
         }
+        
+        // Re-add the onended handler to the new audio source
+        audioSource.onended = function() {
+          console.log("Audio playback ended naturally");
+          cancelAnimationFrame(animationId);
+          
+          // Reset the slider to the end position
+          seekSlider.value = 100;
+          currentTimeDisplay.textContent = formatTime(audioDuration);
+          
+          // Update pause button state
+          const pauseBtn = document.getElementById("pause-btn");
+          pauseBtn.classList.add("paused");
+          pauseBtn.textContent = "Resume";
+          
+          // Pause the visualization
+          if (viz && !viz.isPaused()) {
+            viz.togglePause();
+          }
+        };
         
         seeking = false;
       }
@@ -222,11 +249,11 @@ async function run() {
         }
         animationId = requestAnimationFrame(frame);
         
-        // Handle when audio finishes playing
-        audioSource.onended = () => {
+        // Handle when audio finishes playing naturally (not during seeking)
+        audioSource.onended = function() {
+          console.log("Audio playback ended naturally");
           cancelAnimationFrame(animationId);
           
-            console.log("ended")
           // Reset the slider to the end position
           seekSlider.value = 100;
           currentTimeDisplay.textContent = formatTime(audioDuration);
