@@ -5,6 +5,9 @@ let audioCtx = null;
 let audioSource = null;
 let analyser = null;
 let animationId = null;
+let audioDuration = 0;
+let seeking = false;
+let audioBuffer = null;
 
 async function run() {
   try {
@@ -50,6 +53,59 @@ async function run() {
         }
       }
     }
+    
+    // Helper function to format time in MM:SS format
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60);
+      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Setup seek slider
+    const seekSlider = document.getElementById("seek-slider");
+    const currentTimeDisplay = document.getElementById("current-time");
+    const durationDisplay = document.getElementById("duration");
+    
+    seekSlider.addEventListener("input", function() {
+      seeking = true;
+      const seekPosition = audioDuration * (seekSlider.value / 100);
+      currentTimeDisplay.textContent = formatTime(seekPosition);
+    });
+    
+    seekSlider.addEventListener("change", function() {
+      if (audioCtx && audioSource && audioBuffer) {
+        // Stop current audio source
+        audioSource.stop();
+        
+        // Create a new source for seeking
+        audioSource = audioCtx.createBufferSource();
+        audioSource.buffer = audioBuffer;
+        
+        // Connect the new source to the analyser
+        audioSource.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        
+        // Calculate the new position
+        const seekPosition = audioDuration * (seekSlider.value / 100);
+        
+        // Start playback from the new position
+        audioSource.start(0, seekPosition);
+        
+        // Update the audio context's current time reference
+        audioCtx.resume();
+        
+        // If viz is paused, unpause it
+        if (viz && viz.isPaused()) {
+          viz.togglePause();
+          // Update pause button state
+          const pauseBtn = document.getElementById("pause-btn");
+          pauseBtn.classList.remove("paused");
+          pauseBtn.textContent = "Pause";
+        }
+        
+        seeking = false;
+      }
+    });
     console.log("Creating Visualizer...");
     const vizPromise = new Visualizer("gpu-canvas");
     
@@ -82,6 +138,17 @@ async function run() {
         });
         
         const buf = await audioCtx.decodeAudioData(arrayBuffer);
+        audioBuffer = buf;  // Store buffer globally for seeking
+        audioDuration = buf.duration;
+        
+        // Update duration display
+        durationDisplay.textContent = formatTime(audioDuration);
+        
+        // Enable and reset the seek slider
+        seekSlider.disabled = false;
+        seekSlider.value = 0;
+        currentTimeDisplay.textContent = "0:00";
+        
         audioSource = audioCtx.createBufferSource();
         audioSource.buffer = buf;
 
@@ -129,6 +196,18 @@ async function run() {
           try {
               viz.update(data);
               viz.render();
+              
+              // Update slider position if not currently seeking
+              if (!seeking && audioCtx && audioSource && audioBuffer) {
+                const elapsedTime = audioCtx.currentTime;
+                const sliderPosition = (elapsedTime / audioDuration) * 100;
+                
+                // Only update if the slider position is valid
+                if (sliderPosition >= 0 && sliderPosition <= 100) {
+                  seekSlider.value = sliderPosition;
+                  currentTimeDisplay.textContent = formatTime(elapsedTime);
+                }
+              }
           } catch (e) {
             console.error("Error calling viz methods:", e);
             hasError = true;
@@ -146,6 +225,20 @@ async function run() {
         // Handle when audio finishes playing
         audioSource.onended = () => {
           cancelAnimationFrame(animationId);
+          
+          // Reset the slider to the end position
+          seekSlider.value = 100;
+          currentTimeDisplay.textContent = formatTime(audioDuration);
+          
+          // Update pause button state
+          const pauseBtn = document.getElementById("pause-btn");
+          pauseBtn.classList.add("paused");
+          pauseBtn.textContent = "Resume";
+          
+          // Pause the visualization
+          if (viz && !viz.isPaused()) {
+            viz.togglePause();
+          }
         };
       } catch (error) {
         console.error("Error processing audio:", error);
