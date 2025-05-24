@@ -47,19 +47,22 @@ impl Visualizer {
         let surface = instance.create_surface_from_canvas(canvas).expect("Failed to create surface");
         
         // Request adapter with power preference for mobile
-        let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
+        let adapter = match instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::LowPower, // Better for mobile battery life
             compatible_surface: Some(&surface),
             force_fallback_adapter: false,
-        }).await.unwrap_or_else(|| {
-            // If first attempt fails, try again with fallback adapter
-            web_sys::console::warn_1(&"Primary adapter request failed, trying fallback".into());
-            instance.request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: true,
-            }).await.expect("Failed to find any compatible adapter")
-        });
+        }).await {
+            Some(adapter) => adapter,
+            None => {
+                // If first attempt fails, try again with fallback adapter
+                web_sys::console::warn_1(&"Primary adapter request failed, trying fallback".into());
+                instance.request_adapter(&wgpu::RequestAdapterOptions {
+                    power_preference: wgpu::PowerPreference::default(),
+                    compatible_surface: Some(&surface),
+                    force_fallback_adapter: true,
+                }).await.expect("Failed to find any compatible adapter")
+            }
+        };
 
         // Log adapter info for debugging
         web_sys::console::log_1(&format!("Using adapter: {:?}", adapter.get_info().name).into());
